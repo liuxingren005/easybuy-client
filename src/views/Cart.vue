@@ -9,13 +9,7 @@
     </div>
 
     <!-- 主导航 -->
-    <div class="nav-bar">
-      <div class="nav-categories"><span class="all-categories">全部商品分类</span></div>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">首页</router-link>
-        <a v-for="item in navItems" :key="item" href="javascript:void(0)" class="nav-link">{{ item }}</a>
-      </div>
-    </div>
+    <MainNav />
 
     <!-- 购物车主体 -->
     <div class="cart-body">
@@ -119,6 +113,7 @@ import { useUserStore } from '@/stores/user'
 import productApi from '@/api/product'
 import { stripHtml } from '@/utils/stripHtml'
 import Footer from '@/components/Footer.vue'
+import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
 const { img } = useImage()
@@ -127,8 +122,6 @@ const userStore = useUserStore()
 
 // 商品图片地址
 const productImageUrl = (fileName) => productApi.imageUrl(fileName)
-
-const navItems = ['美食', '生鲜', '家居', '女装', '美妆', '数码', '团购']
 
 // 页面加载时拉取购物车
 onMounted(() => {
@@ -253,38 +246,6 @@ const goHome = () => {
   border-left: 1px solid #ddd;
   padding-left: 20px;
   font-weight: bold;
-}
-
-/* 主导航 */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  padding: 0 40px;
-  border-top: 2px solid #ff6600;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.nav-categories {
-  background: #ff6600;
-  color: #fff;
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.nav-links {
-  display: flex;
-  gap: 30px;
-  padding-left: 30px;
-}
-.nav-link {
-  font-size: 15px;
-  color: #333;
-  text-decoration: none;
-  padding: 10px 0;
-}
-.nav-link:hover {
-  color: #ff6600;
 }
 
 /* 购物车主体 */

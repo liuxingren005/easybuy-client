@@ -12,15 +12,7 @@
     </div>
 
     <!-- 主导航 -->
-    <div class="nav-bar">
-      <div class="nav-inner">
-        <div class="nav-categories"><span class="all-categories">全部商品分类</span></div>
-        <div class="nav-links">
-          <router-link to="/" class="nav-link">首页</router-link>
-          <a v-for="item in navItems" :key="item" href="javascript:void(0)" class="nav-link">{{ item }}</a>
-        </div>
-      </div>
-    </div>
+    <MainNav />
 
     <!-- 面包屑导航 -->
     <div class="breadcrumb">
@@ -169,6 +161,7 @@ import categoryApi from '@/api/category'
 import Footer from '@/components/Footer.vue'
 import CartHover from '@/components/CartHover.vue'
 import HotSearchBar from '@/components/HotSearchBar.vue'
+import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -179,7 +172,6 @@ const productImageUrl = (fileName) => productApi.imageUrl(fileName)
 
 // 搜索关键词
 const searchKeyword = ref('')
-const navItems = ['美食', '生鲜', '家居', '女装', '美妆', '数码', '团购']
 
 // 购物车
 const cartStore = useCartStore()
@@ -436,41 +428,6 @@ onMounted(() => {
 .search-area {
   flex: 1;
   max-width: 600px;
-}
-
-/* 主导航 */
-.nav-bar {
-  background: #fff;
-  border-top: 2px solid #ff6600;
-}
-/* 内层居中容器 */
-.nav-inner {
-  display: flex;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-.nav-categories {
-  background: #ff6600;
-  color: #fff;
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.nav-links {
-  display: flex;
-  gap: 30px;
-  padding-left: 30px;
-}
-.nav-link {
-  font-size: 15px;
-  color: #333;
-  text-decoration: none;
-  padding: 10px 0;
-}
-.nav-link:hover {
-  color: #ff6600;
 }
 
 /* 面包屑 */

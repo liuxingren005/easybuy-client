@@ -15,16 +15,7 @@
     </div>
 
     <!-- 主导航 -->
-    <div class="nav-bar">
-      <div class="nav-inner">
-        <div class="nav-categories"><span class="all-categories">全部商品分类</span></div>
-        <div class="nav-links">
-          <router-link to="/" class="nav-link active">首页</router-link>
-          <router-link v-for="item in navLevel1Cats" :key="item.id" :to="`/products?category1Id=${item.id}`"
-            class="nav-link">{{ text(item.name) }}</router-link>
-        </div>
-      </div>
-    </div>
+    <MainNav />
 
     <!-- 主内容区 -->
     <div class="main-content">
@@ -245,6 +236,7 @@ import Footer from '@/components/Footer.vue'
 import CartHover from '@/components/CartHover.vue'
 import HotSearchBar from '@/components/HotSearchBar.vue'
 import TopBar from '@/components/TopBar.vue'
+import MainNav from '@/components/MainNav.vue'
 import { useHotProducts } from '@/composables/useHotProducts'
 
 const router = useRouter()
@@ -263,11 +255,6 @@ const catSidebarEnter = ref(false)    // 鼠标是否在分类侧栏区域
 const catPanelEnter = ref(false)      // 鼠标是否在分类悬停面板区域
 const panelTopOffset = ref(10)        // 悬停面板距侧栏顶部的偏移
 let hidePanelTimer = null             // 延迟关闭面板的定时器
-
-// 顶部导航中的一级分类
-const navLevel1Cats = computed(() => {
-  return catTree.value.slice(0, 7)
-})
 
 // 是否显示悬停面板
 const showCatPanel = computed(() => {
@@ -496,46 +483,6 @@ onMounted(async () => {
 .search-area {
   flex: 1;
   max-width: 600px;
-}
-
-.nav-bar {
-  background: #fff;
-  border-top: 2px solid #ff6600;
-}
-
-/* 内层居中容器 */
-.nav-inner {
-  display: flex;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.nav-categories {
-  background: #ff6600;
-  color: #fff;
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 30px;
-  padding-left: 30px;
-}
-
-.nav-link {
-  font-size: 16px;
-  color: #333;
-  text-decoration: none;
-  padding: 12px 0;
-}
-
-.nav-link.active {
-  color: #ff6600;
-  border-bottom: 2px solid #ff6600;
 }
 
 .main-content {

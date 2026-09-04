@@ -12,16 +12,7 @@
     </div>
 
     <!-- 主导航 -->
-    <div class="nav-bar">
-      <div class="nav-inner">
-        <div class="nav-categories"><span class="all-categories">全部商品分类</span></div>
-        <div class="nav-links">
-          <router-link to="/" class="nav-link">首页</router-link>
-          <router-link v-for="item in navLevel1Cats" :key="item.id"
-            :to="`/products?category1Id=${item.id}`" class="nav-link">{{ text(item.name) }}</router-link>
-        </div>
-      </div>
-    </div>
+    <MainNav />
 
     <!-- 面包屑导航 -->
     <div class="breadcrumb">
@@ -231,12 +222,12 @@ import { ShoppingCart, Picture, Star, Share, CircleCheck } from '@element-plus/i
 import { ElMessage } from 'element-plus'
 import { useImage } from '@/composables/useImage'
 import { useCartStore } from '@/stores/cart'
-import { stripHtml } from '@/utils/stripHtml'
 import productApi from '@/api/product'
 import categoryApi from '@/api/category'
 import Footer from '@/components/Footer.vue'
 import CartHover from '@/components/CartHover.vue'
 import HotSearchBar from '@/components/HotSearchBar.vue'
+import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -251,25 +242,6 @@ const loading = ref(false)
 // 搜索
 const handleSearch = (keyword) => {
   router.push(`/products?keyword=${encodeURIComponent(keyword)}`)
-}
-
-// 主导航（一级分类，与首页同步）
-const catTree = ref([])
-const navLevel1Cats = computed(() => {
-  return catTree.value.slice(0, 7)
-})
-
-// 文字动态处理
-const text = (val) => stripHtml(val).replace(/\s+/g, ' ').trim()
-
-// 加载分类树（一级→二级→三级）
-const loadCategoryTree = async () => {
-  try {
-    const res = await categoryApi.getTree()
-    catTree.value = res.list || []
-  } catch (e) {
-    // 接口未就绪时静默（导航仅显示首页）
-  }
 }
 
 // 购物车
@@ -581,8 +553,6 @@ const goHome = () => {
 
 onMounted(() => {
   loadProduct()
-  // 主导航分类（与首页同步）
-  loadCategoryTree()
 })
 </script>
 
@@ -613,41 +583,6 @@ onMounted(() => {
 .search-area {
   flex: 1;
   max-width: 600px;
-}
-
-/* 主导航 */
-.nav-bar {
-  background: #fff;
-  border-top: 2px solid #ff6600;
-}
-/* 内层居中容器 */
-.nav-inner {
-  display: flex;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-.nav-categories {
-  background: #ff6600;
-  color: #fff;
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: bold;
-}
-.nav-links {
-  display: flex;
-  gap: 30px;
-  padding-left: 30px;
-}
-.nav-link {
-  font-size: 16px;
-  color: #333;
-  text-decoration: none;
-  padding: 12px 0;
-}
-.nav-link:hover {
-  color: #ff6600;
 }
 
 /* 面包屑 */
