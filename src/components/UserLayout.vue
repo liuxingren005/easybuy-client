@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="user-layout">
     <!-- 顶部导航 -->
     <div class="top-bar">
@@ -21,19 +21,27 @@
         <div class="menu-title">会员中心</div>
         <el-menu :default-active="activeMenu" router class="user-menu">
           <el-menu-item index="/user/orders">
-            <el-icon><List /></el-icon>
+            <el-icon>
+              <List />
+            </el-icon>
             <span>我的订单</span>
           </el-menu-item>
           <el-menu-item index="/user/addresses">
-            <el-icon><Location /></el-icon>
+            <el-icon>
+              <Location />
+            </el-icon>
             <span>收货地址</span>
           </el-menu-item>
           <el-menu-item index="/user/favorites">
-            <el-icon><Star /></el-icon>
+            <el-icon>
+              <Star />
+            </el-icon>
             <span>我的收藏</span>
           </el-menu-item>
           <el-menu-item index="/user/profile">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span>个人信息</span>
           </el-menu-item>
         </el-menu>
@@ -54,7 +62,7 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { List, Location, Star, User } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 import Footer from '@/components/Footer.vue'
 
 const router = useRouter()
@@ -62,7 +70,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 // 图片资源
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const activeMenu = computed(() => route.path)
 
@@ -120,8 +128,14 @@ const handleLogout = async () => {
   color: #999;
 }
 
-.top-right .divider { color: #ddd; }
-.top-right .link { color: #ff6600; cursor: pointer; }
+.top-right .divider {
+  color: #ddd;
+}
+
+.top-right .link {
+  color: #ff6600;
+  cursor: pointer;
+}
 
 .user-body {
   flex: 1;

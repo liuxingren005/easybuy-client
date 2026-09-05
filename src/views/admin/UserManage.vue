@@ -2,12 +2,14 @@
   <div class="user-manage">
     <!-- 搜索区域 -->
     <div class="search-bar">
-      <el-input v-model="queryParams.loginName" placeholder="登录名" clearable style="width: 200px" @keyup.enter="handleSearch"/>
-      <el-date-picker v-model="dateRange" type="daterange" range-separator="至"
-        start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"
-        style="width: 320px" />
+      <el-input v-model="queryParams.loginName" placeholder="登录名" clearable style="width: 200px"
+        @keyup.enter="handleSearch" />
+      <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+        end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 320px" />
       <el-button type="primary" @click="handleSearch">
-        <el-icon><Search /></el-icon>查询
+        <el-icon>
+          <Search />
+        </el-icon>查询
       </el-button>
       <el-button @click="handleReset">重置</el-button>
     </div>
@@ -44,8 +46,8 @@
     <!-- 分页 -->
     <div class="pagination" v-if="total > 0">
       <el-pagination v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize"
-        :page-sizes="[5, 10, 20, 50]" :total="total" layout="total, sizes, prev, pager, next, jumper"
-        background @size-change="loadData" @current-change="loadData" />
+        :page-sizes="[5, 10, 20, 50]" :total="total" layout="total, sizes, prev, pager, next, jumper" background
+        @size-change="loadData" @current-change="loadData" />
     </div>
 
     <!-- 编辑弹窗 -->
@@ -62,8 +64,7 @@
           <el-input v-model="editingUser.userName" placeholder="请输入昵称" />
         </el-form-item>
         <el-form-item label="新密码" prop="password">
-          <el-input v-model="editingUser.password" type="password" show-password
-            placeholder="留空则不修改密码" />
+          <el-input v-model="editingUser.password" type="password" show-password placeholder="留空则不修改密码" />
         </el-form-item>
         <el-form-item label="性别" prop="sex">
           <el-radio-group v-model="editingUser.sex">
@@ -235,7 +236,7 @@ const handleDelete = (row) => {
     } catch (e) {
 
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 onMounted(() => {

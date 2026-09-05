@@ -3,8 +3,8 @@
     <el-tabs v-model="activeTab">
       <!-- 基础信息 -->
       <el-tab-pane label="基础信息" name="info">
-        <el-form ref="infoFormRef" :model="infoForm" :rules="infoRules" label-width="100px"
-          style="max-width: 480px" v-loading="loading">
+        <el-form ref="infoFormRef" :model="infoForm" :rules="infoRules" label-width="100px" style="max-width: 480px"
+          v-loading="loading">
           <el-form-item label="登录名">
             <el-input :model-value="userStore.loginName" disabled />
           </el-form-item>
@@ -37,8 +37,7 @@
 
       <!-- 修改密码 -->
       <el-tab-pane label="修改密码" name="password">
-        <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="120px"
-          style="max-width: 560px">
+        <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="120px" style="max-width: 560px">
           <el-form-item label="当前邮箱">
             <el-input :model-value="infoForm.email" disabled />
           </el-form-item>
@@ -46,8 +45,7 @@
             <div class="captcha-row">
               <el-input v-model="pwdForm.emailCode" placeholder="请输入邮箱验证码" maxlength="6" />
               <el-button type="primary" plain class="send-code-btn"
-                :disabled="pwdSendingCode || pwdCodeCountdown > 0 || !infoForm.email"
-                @click="handleSendPwdEmailCode">
+                :disabled="pwdSendingCode || pwdCodeCountdown > 0 || !infoForm.email" @click="handleSendPwdEmailCode">
                 <span v-if="pwdCodeCountdown > 0">{{ pwdCodeCountdown }}s 后重发</span>
                 <span v-else-if="pwdSendingCode">发送中...</span>
                 <span v-else>获取验证码</span>
@@ -296,11 +294,13 @@ onMounted(() => {
   border-color: #ff6600;
   color: #ff6600;
 }
+
 .send-code-btn:hover:not(:disabled) {
   background: #ff6600;
   color: #fff;
   border-color: #ff6600;
 }
+
 .send-code-btn:disabled {
   opacity: 0.6;
 }
@@ -313,6 +313,7 @@ onMounted(() => {
   border-radius: 4px;
   color: #ff6600;
 }
+
 .code-val {
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
@@ -321,6 +322,7 @@ onMounted(() => {
   color: #ff6600;
   margin: 0 6px;
 }
+
 .code-copy {
   display: inline-block;
   margin-left: 8px;
@@ -332,6 +334,7 @@ onMounted(() => {
   cursor: pointer;
   transition: background .2s;
 }
+
 .code-copy:hover {
   background: #ff8533;
 }

@@ -63,6 +63,11 @@ const productApi = {
     })
   },
 
+  /** 删除 SFTP 文件服务器上的商品图片 */
+  deleteFile(fileName) {
+    return request.delete('/product/file', { params: { fileName } })
+  },
+
   /** 重建 Elasticsearch 商品索引（全量同步） */
   rebuildIndex() {
     return request.post('/product/es/rebuild')

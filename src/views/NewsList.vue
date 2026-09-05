@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="news-list-page">
     <!-- 顶部工具栏 -->
     <TopBar />
@@ -25,12 +25,13 @@
       <div class="search-bar">
         <el-input v-model="filterTitle" placeholder="搜索资讯标题" clearable style="width: 240px">
           <template #prefix>
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
           </template>
         </el-input>
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="至"
-          start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"
-          style="width: 320px" />
+        <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+          end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 320px" />
         <el-button type="primary" @click="handleSearch">查询</el-button>
         <el-button @click="handleReset">重置</el-button>
       </div>
@@ -49,9 +50,8 @@
 
       <!-- 分页 -->
       <div class="pagination" v-if="filteredList.length > 0">
-        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
-          :page-sizes="[5, 10, 20]" :total="filteredList.length"
-          layout="total, sizes, prev, pager, next, jumper" background />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[5, 10, 20]"
+          :total="filteredList.length" layout="total, sizes, prev, pager, next, jumper" background />
       </div>
     </div>
 
@@ -73,13 +73,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 import newsApi from '@/api/news'
 import Footer from '@/components/Footer.vue'
 import TopBar from '@/components/TopBar.vue'
 
 const router = useRouter()
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const loading = ref(false)
 const allNews = ref([])
@@ -153,50 +153,152 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.news-list-page { background: #f5f5f5; min-height: 100vh; }
+.news-list-page {
+  background: #f5f5f5;
+  min-height: 100vh;
+}
 
 .header {
   background: #fff;
 }
+
 .header-inner {
-  max-width: 1200px; margin: 0 auto; padding: 20px;
-  display: flex; align-items: center; gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
-.logo-img { height: 50px; width: auto; cursor: pointer; }
-.page-title { font-size: 24px; color: #333; border-left: 2px solid #ff6600; padding-left: 16px; }
+
+.logo-img {
+  height: 50px;
+  width: auto;
+  cursor: pointer;
+}
+
+.page-title {
+  font-size: 24px;
+  color: #333;
+  border-left: 2px solid #ff6600;
+  padding-left: 16px;
+}
 
 .nav-bar {
   background: #fff;
   border-top: 2px solid #ff6600;
 }
-.nav-inner {
-  max-width: 1200px; margin: 0 auto; padding: 0 20px;
-  display: flex; gap: 30px; align-items: center;
-}
-.nav-link { font-size: 16px; color: #333; text-decoration: none; padding: 12px 0; }
-.nav-link.active { color: #ff6600; border-bottom: 2px solid #ff6600; }
 
-.content-area { max-width: 1200px; margin: 15px auto; padding: 0 20px; }
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+}
+
+.nav-link {
+  font-size: 16px;
+  color: #333;
+  text-decoration: none;
+  padding: 12px 0;
+}
+
+.nav-link.active {
+  color: #ff6600;
+  border-bottom: 2px solid #ff6600;
+}
+
+.content-area {
+  max-width: 1200px;
+  margin: 15px auto;
+  padding: 0 20px;
+}
 
 .search-bar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
-.news-container { background: #fff; border-radius: 8px; padding: 20px; }
+.news-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+}
+
 .news-card {
-  padding: 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.news-card:hover { background: #fff5f0; }
-.news-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.news-title { font-size: 16px; color: #333; font-weight: 500; }
-.news-card:hover .news-title { color: #ff6600; }
-.news-date { font-size: 13px; color: #ccc; white-space: nowrap; }
-.news-content { font-size: 14px; color: #666; line-height: 1.6; overflow: hidden; text-overflow: ellipsis; /* 模拟多行省略 */ max-height: 3.2rem; }
 
-.pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
+.news-card:hover {
+  background: #fff5f0;
+}
 
-.detail-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.detail-date { font-size: 13px; color: #999; }
-.detail-content { font-size: 14px; color: #333; line-height: 1.8; white-space: pre-wrap; }
+.news-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.news-title {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.news-card:hover .news-title {
+  color: #ff6600;
+}
+
+.news-date {
+  font-size: 13px;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.news-content {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 模拟多行省略 */
+  max-height: 3.2rem;
+}
+
+.pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-date {
+  font-size: 13px;
+  color: #999;
+}
+
+.detail-content {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
 </style>

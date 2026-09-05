@@ -68,22 +68,25 @@
 
     <!-- 主内容区 -->
     <div class="main-content">
-      <!-- 左侧浏览历史 -->
+      <!-- 左侧收藏夹 -->
       <div class="sidebar">
         <div class="sidebar-title">
-          <span class="title-text">浏览历史</span>
-          <span class="clear-btn" @click="clearHistory">清空</span>
+          <span class="title-text">我的收藏</span>
+          <span class="clear-btn" @click="clearFavorites">清空</span>
         </div>
         <div class="history-list">
-          <div v-for="(item, index) in browseHistory" :key="index" class="history-item" @click="goDetail(item.id)">
+          <div v-for="(item, index) in favoriteList" :key="item.id" class="history-item"
+            @click="goDetail(item.id)">
             <div class="history-img">
               <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="item.name" />
-              <el-icon v-else size="40" color="#ddd"><Picture /></el-icon>
+              <el-icon v-else size="40" color="#ddd">
+                <Picture />
+              </el-icon>
             </div>
-            <p class="history-name">{{ item.name }}</p>
+            <p class="history-name">{{ stripHtml(item.name) }}</p>
             <p class="history-price">¥{{ Number(item.price).toFixed(2) }}</p>
           </div>
-          <div v-if="browseHistory.length === 0" class="empty-history">暂无浏览记录</div>
+          <div v-if="favoriteList.length === 0" class="empty-history">暂无收藏商品</div>
         </div>
       </div>
 
@@ -95,7 +98,9 @@
             <span :class="{ active: sortBy === 'default' }" @click="sortBy = 'default'; loadProducts()">默认</span>
             <span :class="{ active: sortBy === 'sales' }" @click="sortBy = 'sales'; loadProducts()">
               销量
-              <el-icon class="sort-icon"><Sort /></el-icon>
+              <el-icon class="sort-icon">
+                <Sort />
+              </el-icon>
             </span>
             <span :class="{ active: sortBy === 'price' }" @click="togglePriceSort()">
               价格
@@ -110,8 +115,11 @@
         <div v-loading="loading" class="product-grid">
           <div v-for="product in productList" :key="product.id" class="product-card" @click="goDetail(product.id)">
             <div class="product-image">
-              <img v-if="product.fileName" :src="productImageUrl(product.fileName)" :alt="product.name" class="product-img" />
-              <el-icon v-else size="60" color="#ddd"><Picture /></el-icon>
+              <img v-if="showImage(product.fileName)" :src="productImageUrl(product.fileName)"
+                :alt="stripHtml(product.name)" class="product-img" @error="handleImageError(product.fileName)" />
+              <el-icon v-else size="60" color="#ddd">
+                <Picture />
+              </el-icon>
             </div>
 
             <p class="product-name" v-html="product.name"></p>
@@ -119,14 +127,19 @@
 
             <div class="product-bottom">
               <span class="product-price">¥{{ Number(product.price).toFixed(2) }}</span>
-              <span class="product-sales">{{ product.stock || 0 }}R</span>
+              <span class="product-sales">{{ product.stock || 0 }}件</span>
             </div>
             <div class="product-actions">
-              <el-button size="small" type="danger" plain @click.stop="addToFavorites(product)">
-                <el-icon><Star /></el-icon>收藏
+              <el-button size="small" :type="favoriteIds.has(product.id) ? 'success' : 'danger'" plain
+                @click.stop="toggleFavorite(product)">
+                <el-icon>
+                  <Star />
+                </el-icon>{{ favoriteIds.has(product.id) ? '已收藏' : '收藏' }}
               </el-button>
               <el-button size="small" type="primary" @click.stop="addToCart(product)">
-                <el-icon><ShoppingCart /></el-icon>加入购物车
+                <el-icon>
+                  <ShoppingCart />
+                </el-icon>加入购物车
               </el-button>
             </div>
           </div>
@@ -137,9 +150,9 @@
 
         <!-- 分页 -->
         <div class="pagination" v-if="total > 0">
-          <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize"
-            :page-sizes="[12, 24, 48]" :total="total" layout="total, prev, pager, next, jumper"
-            background @size-change="handleSizeChange" @current-change="handlePageChange" />
+          <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize" :page-sizes="[12, 24, 48]"
+            :total="total" layout="total, prev, pager, next, jumper" background @size-change="handleSizeChange"
+            @current-change="handlePageChange" />
         </div>
       </div>
     </div>
@@ -154,18 +167,22 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ShoppingCart, Picture, Star, Sort } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver, useImageFallback } from '@/composables/useImage'
 import { useCartStore } from '@/stores/cart'
+import { useUserStore } from '@/stores/user'
 import productApi from '@/api/product'
 import categoryApi from '@/api/category'
+import favoriteApi from '@/api/favorite'
 import Footer from '@/components/Footer.vue'
 import CartHover from '@/components/CartHover.vue'
 import HotSearchBar from '@/components/HotSearchBar.vue'
 import MainNav from '@/components/MainNav.vue'
+import { stripHtml } from '@/utils/stripHtml'
 
 const router = useRouter()
 const route = useRoute()
-const { img } = useImage()
+const { img } = useImageResolver()
+const { showImage, handleImageError } = useImageFallback()
 
 // 商品图片地址
 const productImageUrl = (fileName) => productApi.imageUrl(fileName)
@@ -175,6 +192,15 @@ const searchKeyword = ref('')
 
 // 购物车
 const cartStore = useCartStore()
+
+// 用户（收藏登录）
+const userStore = useUserStore()
+
+// 收藏列表
+const favoriteList = ref([])
+
+// 已收藏商品ID集合
+const favoriteIds = computed(() => new Set(favoriteList.value.map(item => item.id)))
 
 // 分类信息
 const category1Name = ref('')
@@ -350,7 +376,7 @@ const clearHistory = () => {
 const addToCart = async (product) => {
   const isSuccess = await cartStore.addToCart(product, 1)
   if (isSuccess) {
-    ElMessage.success(`已将「${product.name}」加入购物车`)
+    ElMessage.success(`已将「${stripHtml(product.name)}」加入购物车`)
   }
 }
 
@@ -359,9 +385,41 @@ const goCart = () => {
   router.push('/cart')
 }
 
-// 加入收藏
-const addToFavorites = (product) => {
-  ElMessage.success(`已收藏「${product.name}」`)
+// 收藏/取消收藏切换
+const toggleFavorite = async (product) => {
+  // 收藏登录
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后再收藏商品')
+    router.push('/login')
+    return
+  }
+  const isFavorited = favoriteIds.value.has(product.id)
+  try {
+    const res = isFavorited
+      ? await favoriteApi.remove(product.id)
+      : await favoriteApi.add(product.id)
+    favoriteList.value = res.list || []
+    ElMessage.success(isFavorited ? '已取消收藏' : '收藏成功')
+  } catch (e) { }
+}
+
+// 加载收藏列表
+const loadFavorites = async () => {
+  if (!userStore.isLoggedIn) return
+  try {
+    const res = await favoriteApi.getList()
+    favoriteList.value = res.list || []
+  } catch (e) { }
+}
+
+// 清空收藏
+const clearFavorites = async () => {
+  if (!userStore.isLoggedIn) return
+  try {
+    const res = await favoriteApi.clear()
+    favoriteList.value = res.list || []
+    ElMessage.success('已清空收藏')
+  } catch (e) { }
 }
 
 // 返回首页
@@ -384,7 +442,7 @@ const loadCategoryNames = async () => {
       const res = await categoryApi.getById(route.query.category3Id)
       category3Name.value = res.data?.name || ''
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 onMounted(() => {
@@ -396,6 +454,8 @@ onMounted(() => {
   /* browseHistory.value = JSON.parse(localStorage.getItem('browseHistory') || '[]') */
   // 加载分类名称
   loadCategoryNames()
+  // 加载收藏列表
+  loadFavorites()
   // 加载商品
   loadProducts()
 })
@@ -412,6 +472,7 @@ onMounted(() => {
   background: #fff;
   border-bottom: 1px solid #eee;
 }
+
 .top-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -420,11 +481,13 @@ onMounted(() => {
   gap: 40px;
   padding: 15px 20px;
 }
+
 .logo-img {
   height: 50px;
   width: auto;
   cursor: pointer;
 }
+
 .search-area {
   flex: 1;
   max-width: 600px;
@@ -442,20 +505,25 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 6px;
 }
+
 .breadcrumb .crumb {
   cursor: pointer;
 }
+
 .breadcrumb .crumb:hover {
   color: #ff6600;
 }
+
 .breadcrumb .crumb.current {
   color: #ff6600;
   font-weight: bold;
   cursor: default;
 }
+
 .breadcrumb .sep {
   color: #ccc;
 }
+
 .filter-tag {
   display: inline-flex;
   align-items: center;
@@ -468,6 +536,7 @@ onMounted(() => {
   font-size: 12px;
   margin-left: 10px;
 }
+
 .filter-tag .close {
   cursor: pointer;
   font-size: 14px;
@@ -481,15 +550,18 @@ onMounted(() => {
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
 .filter-row {
   display: flex;
   align-items: flex-start;
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
 }
+
 .filter-row:last-child {
   border-bottom: none;
 }
+
 .filter-label {
   width: 70px;
   flex-shrink: 0;
@@ -497,12 +569,14 @@ onMounted(() => {
   font-size: 13px;
   padding-top: 4px;
 }
+
 .filter-options {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px 0;
 }
+
 .filter-options span {
   padding: 4px 12px;
   font-size: 13px;
@@ -511,9 +585,11 @@ onMounted(() => {
   border-radius: 3px;
   transition: all 0.2s;
 }
+
 .filter-options span:hover {
   color: #ff6600;
 }
+
 .filter-options span.active {
   background: #ff6600;
   color: #fff;
@@ -534,6 +610,7 @@ onMounted(() => {
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
 .sidebar-title {
   display: flex;
   justify-content: space-between;
@@ -541,6 +618,7 @@ onMounted(() => {
   padding: 10px 12px;
   border-bottom: 1px solid #eee;
 }
+
 .title-text {
   font-size: 14px;
   font-weight: bold;
@@ -548,26 +626,32 @@ onMounted(() => {
   border-left: 3px solid #ff6600;
   padding-left: 8px;
 }
+
 .clear-btn {
   font-size: 12px;
   color: #999;
   cursor: pointer;
 }
+
 .clear-btn:hover {
   color: #ff6600;
 }
+
 .history-list {
   padding: 10px;
 }
+
 .history-item {
   text-align: center;
   padding: 10px 0;
   border-bottom: 1px solid #f5f5f5;
   cursor: pointer;
 }
+
 .history-item:last-child {
   border-bottom: none;
 }
+
 .history-img {
   height: 80px;
   display: flex;
@@ -575,11 +659,13 @@ onMounted(() => {
   justify-content: center;
   margin-bottom: 6px;
 }
+
 .history-img img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .history-name {
   font-size: 12px;
   color: #333;
@@ -588,11 +674,13 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .history-price {
   font-size: 13px;
   color: #ff4e00;
   font-weight: bold;
 }
+
 .empty-history {
   text-align: center;
   color: #ccc;
@@ -616,10 +704,12 @@ onMounted(() => {
   border-bottom: 1px solid #eee;
   background: #fafafa;
 }
+
 .sort-options {
   display: flex;
   gap: 0;
 }
+
 .sort-options span {
   padding: 6px 16px;
   font-size: 13px;
@@ -632,21 +722,26 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
 }
+
 .sort-options span:first-child {
   border-radius: 3px 0 0 3px;
 }
+
 .sort-options span:last-child {
   border-right: 1px solid #ddd;
   border-radius: 0 3px 3px 0;
 }
+
 .sort-options span.active {
   background: #ff6600;
   color: #fff;
   border-color: #ff6600;
 }
+
 .sort-icon {
   font-size: 12px;
 }
+
 .total-count {
   font-size: 13px;
   color: #999;
@@ -660,6 +755,7 @@ onMounted(() => {
   padding: 10px;
   min-height: 400px;
 }
+
 .product-card {
   border: 1px solid #f0f0f0;
   border-radius: 4px;
@@ -668,10 +764,12 @@ onMounted(() => {
   transition: all 0.2s;
   background: #fff;
 }
+
 .product-card:hover {
   border-color: #ff6600;
   box-shadow: 0 2px 8px rgba(255, 102, 0, 0.15);
 }
+
 .product-image {
   height: 160px;
   display: flex;
@@ -681,11 +779,13 @@ onMounted(() => {
   border-radius: 4px;
   margin-bottom: 8px;
 }
+
 .product-img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .product-name {
   font-size: 13px;
   color: #333;
@@ -693,10 +793,11 @@ onMounted(() => {
   height: 36px;
   line-height: 18px;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: box;
+  line-clamp: 2;
+  box-orient: vertical;
 }
+
 .product-desc {
   font-size: 12px;
   color: #999;
@@ -706,28 +807,34 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .product-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
+
 .product-price {
   font-size: 18px;
   font-weight: bold;
   color: #ff4e00;
 }
+
 .product-sales {
   font-size: 12px;
   color: #999;
 }
+
 .product-actions {
   display: flex;
   gap: 6px;
 }
+
 .product-actions .el-button {
   flex: 1;
 }
+
 .no-products {
   grid-column: 1 / -1;
   padding: 60px 0;

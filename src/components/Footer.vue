@@ -1,11 +1,13 @@
-<template>
+﻿<template>
   <div class="app-footer">
     <!-- 服务保障栏 -->
     <div class="service-bar">
       <div class="service-inner">
         <div v-for="item in serviceItems" :key="item.title" class="service-item">
           <div class="service-icon">
-            <el-icon :size="28"><component :is="item.icon" /></el-icon>
+            <el-icon :size="28">
+              <component :is="item.icon" />
+            </el-icon>
           </div>
           <div class="service-text">
             <p class="service-title">{{ item.title }}</p>
@@ -29,7 +31,9 @@
           <div class="footer-contact">
             <div class="qr-section">
               <div class="qr-box">
-                <el-icon :size="48" color="#ff6600"><Shop /></el-icon>
+                <el-icon :size="48" color="#ff6600">
+                  <Shop />
+                </el-icon>
               </div>
               <p class="qr-label">扫一扫<br />关注我们</p>
             </div>
@@ -62,10 +66,10 @@
 </template>
 
 <script setup>
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 import { Medal, Van, Discount, Timer, Shop } from '@element-plus/icons-vue'
 
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const serviceItems = [
   { title: '正品保障', sub: '正品保障 放心购买', icon: Medal },
@@ -96,17 +100,20 @@ const navColumns = [
   border-bottom: 1px solid #eee;
   padding: 30px 0;
 }
+
 .service-inner {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
   justify-content: space-around;
 }
+
 .service-item {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .service-icon {
   width: 56px;
   height: 56px;
@@ -118,11 +125,13 @@ const navColumns = [
   color: #ff6600;
   flex-shrink: 0;
 }
+
 .service-title {
   font-size: 16px;
   font-weight: bold;
   color: #333;
 }
+
 .service-sub {
   font-size: 12px;
   color: #999;
@@ -134,30 +143,36 @@ const navColumns = [
   background: #fff;
   padding: 30px 0;
 }
+
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
 }
+
 .footer-cols {
   display: flex;
   justify-content: space-between;
   gap: 20px;
 }
+
 .footer-col {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .footer-col h4 {
   font-size: 14px;
   font-weight: bold;
   color: #333;
   margin-bottom: 6px;
 }
+
 .footer-link {
   font-size: 12px;
   color: #999;
 }
+
 .footer-link:hover {
   color: #ff6600;
 }
@@ -169,9 +184,11 @@ const navColumns = [
   gap: 24px;
   margin-left: 20px;
 }
+
 .qr-section {
   text-align: center;
 }
+
 .qr-box {
   width: 90px;
   height: 90px;
@@ -181,31 +198,38 @@ const navColumns = [
   justify-content: center;
   background: #fafafa;
 }
+
 .qr-label {
   font-size: 12px;
   color: #999;
   margin-top: 6px;
   line-height: 1.4;
 }
+
 .social-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
 .social-link {
   font-size: 12px;
   color: #999;
 }
+
 .social-link:hover {
   color: #ff6600;
 }
+
 .hotline-section {
   text-align: right;
 }
+
 .hotline-label {
   font-size: 12px;
   color: #999;
 }
+
 .hotline-number {
   font-size: 16px;
   font-weight: bold;
@@ -220,12 +244,14 @@ const navColumns = [
   padding: 20px 0;
   text-align: center;
 }
+
 .icp-text {
   font-size: 12px;
   color: #999;
   line-height: 1.8;
   margin-bottom: 10px;
 }
+
 .footer-badges {
   display: flex;
   justify-content: center;

@@ -14,8 +14,8 @@
     <!-- 确认订单主体 -->
     <div class="checkout-body" v-loading="loading">
       <!-- 空购物车 -->
-      <div v-if="cartStore.cartList.length === 0" class="empty-cart">
-        <el-empty description="购物车为空，请先添加商品">
+      <div v-if="checkoutList.length === 0" class="empty-cart">
+        <el-empty description="当前无可结算商品，请先添加商品">
           <el-button type="primary" @click="goHome">去购物</el-button>
         </el-empty>
       </div>
@@ -37,13 +37,15 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in cartStore.cartList" :key="item.id"
-                :class="{ 'row-alt': index % 2 === 1 }">
+              <tr v-for="(item, index) in checkoutList" :key="item.id" :class="{ 'row-alt': index % 2 === 1 }">
                 <td>
                   <div class="cell-product">
                     <div class="product-thumb">
-                      <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="stripHtml(item.name)" />
-                      <el-icon v-else size="50" color="#ddd"><Picture /></el-icon>
+                      <img v-if="showImage(item.fileName)" :src="productImageUrl(item.fileName)"
+                        :alt="stripHtml(item.name)" @error="handleImageError(item.fileName)" />
+                      <el-icon v-else size="50" color="#ddd">
+                        <Picture />
+                      </el-icon>
                     </div>
                     <span class="product-name">{{ item.name }}</span>
                   </div>
@@ -59,7 +61,7 @@
               </tr>
               <tr class="row-summary">
                 <td colspan="5" align="right">
-                  商品总价：￥{{ cartStore.totalAmount.toFixed(2) }} ； 返还积分 {{ cartStore.totalPoints }}R
+                  商品总价：￥{{ checkoutAmount.toFixed(2) }} ； 返还积分 {{ checkoutPoints }}R
                 </td>
               </tr>
             </tbody>
@@ -73,15 +75,18 @@
           </div>
           <div class="address-list" v-if="addressList.length > 0">
             <div v-for="addr in addressList" :key="addr.id"
-              :class="['address-item', { active: selectedAddressId === addr.id }]"
-              @click="selectedAddressId = addr.id">
-              <el-icon v-if="selectedAddressId === addr.id" class="check-icon"><CircleCheck /></el-icon>
+              :class="['address-item', { active: selectedAddressId === addr.id }]" @click="selectedAddressId = addr.id">
+              <el-icon v-if="selectedAddressId === addr.id" class="check-icon">
+                <CircleCheck />
+              </el-icon>
               <div class="address-text">{{ addr.address }}</div>
               <el-tag v-if="addr.isDefault === 1" size="small" type="warning" effect="plain">默认</el-tag>
               <el-button link size="small" @click.stop="editAddress(addr)">修改</el-button>
             </div>
             <div class="address-item add-address" @click="addAddress">
-              <el-icon size="24"><Plus /></el-icon>
+              <el-icon size="24">
+                <Plus />
+              </el-icon>
               <span>新增收货地址</span>
             </div>
           </div>
@@ -109,8 +114,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(method, index) in deliveryMethods" :key="index"
-                :class="{ 'row-alt': index % 2 === 1 }">
+              <tr v-for="(method, index) in deliveryMethods" :key="index" :class="{ 'row-alt': index % 2 === 1 }">
                 <td align="center">
                   <input type="radio" name="delivery" :checked="selectedDelivery === index"
                     @change="selectedDelivery = index" />
@@ -170,10 +174,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Picture, Plus, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver, useImageFallback } from '@/composables/useImage'
 import { useAddress } from '@/composables/useAddress'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
@@ -185,7 +189,9 @@ import Footer from '@/components/Footer.vue'
 import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
-const { img } = useImage()
+const route = useRoute()
+const { img } = useImageResolver()
+const { showImage, handleImageError } = useImageFallback()
 const { cascaderOptions } = useAddress()
 const cartStore = useCartStore()
 const userStore = useUserStore()
@@ -232,10 +238,35 @@ const getRegionLabels = (codes) => {
   return labels.join(' ')
 }
 
+// 购物车页携带的已选商品ID（未携带时按全部有效商品结算）
+const selectedIdSet = computed(() => {
+  const raw = route.query.ids
+  if (!raw) return null
+  const ids = String(raw).split(',').map(id => Number(id)).filter(id => !Number.isNaN(id))
+  return new Set(ids)
+})
+
+// 购物车中参与结算的商品（失效商品不参与结算）
+const checkoutList = computed(() => {
+  const list = cartStore.cartList.filter(i => !i.invalid)
+  const set = selectedIdSet.value
+  return set ? list.filter(i => set.has(i.id)) : list
+})
+
+// 结算商品总价
+const checkoutAmount = computed(() =>
+  checkoutList.value.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+)
+
+// 结算商品返还总积分
+const checkoutPoints = computed(() =>
+  checkoutList.value.reduce((sum, item) => sum + Math.floor(Number(item.price)) * item.quantity, 0)
+)
+
 // 应付总额（商品总价 + 运费）
 const finalAmount = computed(() => {
   const deliveryFee = deliveryMethods.value[selectedDelivery.value]?.fee || 0
-  return cartStore.totalAmount + deliveryFee
+  return checkoutAmount.value + deliveryFee
 })
 
 // 加载收货地址
@@ -311,8 +342,8 @@ const saveAddress = async () => {
 
 // 提交订单
 const handleSubmit = async () => {
-  if (cartStore.cartList.length === 0) {
-    ElMessage.warning('购物车为空')
+  if (checkoutList.value.length === 0) {
+    ElMessage.warning('当前无可结算商品，请检查购物车')
     return
   }
   const selectedAddr = addressList.value.find(a => a.id === selectedAddressId.value)
@@ -330,7 +361,7 @@ const handleSubmit = async () => {
       userAddress: selectedAddr.address,
       cost: finalAmount.value,
       // 订单明细
-      orderDetailList: cartStore.cartList.map(item => ({
+      orderDetailList: checkoutList.value.map(item => ({
         productId: item.id,
         quantity: item.quantity,
         cost: Number(item.price) * item.quantity
@@ -341,8 +372,8 @@ const handleSubmit = async () => {
     const res = await orderApi.add(orderData)
     const orderId = res.orderId
 
-    // 清空购物车（异步调用后端 Redis）
-    await cartStore.clearCart()
+    // 仅移除已下单的商品（部分结算时保留未选商品）
+    await Promise.all(checkoutList.value.map(item => cartStore.removeFromCart(item.id)))
 
     ElMessage.success('订单提交成功！')
 
@@ -392,6 +423,7 @@ onMounted(() => {
   background: #fff;
   border-bottom: 1px solid #eee;
 }
+
 .top-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -400,11 +432,13 @@ onMounted(() => {
   gap: 20px;
   padding: 15px 20px;
 }
+
 .logo-img {
   height: 50px;
   width: auto;
   cursor: pointer;
 }
+
 .page-title {
   font-size: 20px;
   color: #ff6600;
@@ -433,6 +467,7 @@ onMounted(() => {
   border: 1px solid #e8e8e8;
   margin-bottom: 15px;
 }
+
 .section-title {
   padding: 12px 20px;
   font-size: 15px;
@@ -450,9 +485,11 @@ onMounted(() => {
   border-collapse: collapse;
   font-size: 14px;
 }
+
 .checkout-table thead tr {
   background: #f5f5f5;
 }
+
 .checkout-table th {
   padding: 12px 10px;
   text-align: center;
@@ -460,15 +497,18 @@ onMounted(() => {
   font-weight: normal;
   border-bottom: 1px solid #e8e8e8;
 }
+
 .th-name {
   text-align: left !important;
   padding-left: 20px !important;
 }
+
 .checkout-table td {
   padding: 16px 10px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
 }
+
 .row-alt {
   background: #fafafa;
 }
@@ -480,6 +520,7 @@ onMounted(() => {
   gap: 12px;
   padding-left: 10px;
 }
+
 .product-thumb {
   width: 73px;
   height: 73px;
@@ -490,11 +531,13 @@ onMounted(() => {
   flex-shrink: 0;
   background: #fff;
 }
+
 .product-thumb img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .product-name {
   font-size: 13px;
   color: #333;
@@ -503,6 +546,7 @@ onMounted(() => {
   line-height: 1.5;
   max-height: 3em;
 }
+
 .cell-subtotal {
   color: #ff4e00;
   font-weight: bold;
@@ -523,6 +567,7 @@ onMounted(() => {
   gap: 12px;
   padding: 20px;
 }
+
 .address-item {
   position: relative;
   width: 280px;
@@ -537,13 +582,16 @@ onMounted(() => {
   gap: 8px;
   box-sizing: border-box;
 }
+
 .address-item:hover {
   border-color: #ffd4b8;
 }
+
 .address-item.active {
   border-color: #ff6600;
   background: #fff5f0;
 }
+
 .check-icon {
   position: absolute;
   top: 8px;
@@ -551,6 +599,7 @@ onMounted(() => {
   color: #ff6600;
   font-size: 20px;
 }
+
 .address-text {
   flex: 1;
   font-size: 14px;
@@ -559,10 +608,11 @@ onMounted(() => {
   line-height: 1.5;
   min-height: 3em;
   max-height: 3em;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: box;
+  line-clamp: 2;
+  box-orient: vertical;
 }
+
 .add-address {
   flex-direction: column;
   justify-content: center;
@@ -570,10 +620,12 @@ onMounted(() => {
   color: #999;
   border-style: dashed;
 }
+
 .add-address span {
   font-size: 13px;
   margin-top: 4px;
 }
+
 .no-address {
   padding: 40px 0;
 }
@@ -583,6 +635,7 @@ onMounted(() => {
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
 .submit-bar {
   display: flex;
   justify-content: flex-end;
@@ -590,15 +643,18 @@ onMounted(() => {
   gap: 30px;
   padding: 20px;
 }
+
 .submit-total {
   font-size: 16px;
   color: #333;
 }
+
 .total-price {
   font-size: 24px;
   color: #ff4e00;
   margin-left: 4px;
 }
+
 .submit-btn {
   background: #ff6600;
   border-color: #ff6600;
@@ -606,6 +662,7 @@ onMounted(() => {
   height: 48px;
   font-size: 16px;
 }
+
 .submit-btn:hover {
   background: #ff4e00;
   border-color: #ff4e00;

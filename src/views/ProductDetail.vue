@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="product-detail-page">
     <!-- 顶部工具栏 -->
     <div class="top-bar">
@@ -27,23 +27,24 @@
 
     <!-- 商品详情主体 -->
     <div v-loading="loading" class="detail-main">
-      <div class="detail-content" v-if="product">
+      <!-- 商品不存在/已下架 -->
+      <div v-if="notFound" class="detail-empty">
+        <el-empty description="商品不存在或已下架">
+          <el-button type="primary" @click="goHome">去逛逛</el-button>
+        </el-empty>
+      </div>
+      <div class="detail-content" v-else-if="product">
         <!-- 左侧图片区 -->
         <div class="product-images">
-          <div class="main-image"
-               @mouseenter="zoomEnter"
-               @mouseleave="zoomLeave"
-               @mousemove="zoomMove">
-            <!-- 主图 -->
-            <transition name="img-fade" mode="out-in">
-              <img v-if="showCurrentImage"
-                   :key="currentImageSrc"
-                   :src="currentImageSrc"
-                   :alt="product.name"
-                   ref="mainImg"
-                   @error="handleImageError(currentFileName)" />
-              <el-icon v-else :key="'placeholder'" size="120" color="#ddd"><Picture /></el-icon>
-            </transition>
+          <div class="main-image" @mouseenter="zoomEnter" @mouseleave="zoomLeave" @mousemove="zoomMove">
+            <!-- 占位图标 -->
+            <el-icon v-if="!mainImageLoaded" size="120" color="#ddd">
+              <Picture />
+            </el-icon>
+            <!-- 主图：下载完成后再淡入，避免短暂空白 -->
+            <img v-if="showCurrentImage" :key="currentImageSrc" :src="currentImageSrc" :alt="product.name"
+              ref="mainImg" :class="{ loaded: mainImageLoaded }" @load="mainImageLoaded = true"
+              @error="handleImageError(currentFileName)" />
             <!-- 放大镜标记 -->
             <div v-if="zoomVisible && showCurrentImage" class="zoom-lens" :style="lensStyle"></div>
           </div>
@@ -56,13 +57,13 @@
             <div class="thumb-arrow prev" @click="prevThumb">‹</div>
             <div class="thumbs-wrapper">
               <div class="thumbs">
-                <div v-for="(thumb, index) in thumbList" :key="index"
-                  :class="{ active: currentThumbIndex === index }"
-                  class="thumb-item"
-                  @click="currentThumbIndex = index">
-                  <img v-if="showThumb(thumb)" :src="productImageUrl(thumb)" :alt="`缩略图${index+1}`"
+                <div v-for="(thumb, index) in thumbList" :key="index" :class="{ active: currentThumbIndex === index }"
+                  class="thumb-item" @click="currentThumbIndex = index">
+                  <img v-if="showThumb(thumb)" :src="productImageUrl(thumb)" :alt="`缩略图${index + 1}`"
                     @error="handleImageError(thumb)" />
-                  <el-icon v-else size="40" color="#ddd"><Picture /></el-icon>
+                  <el-icon v-else size="40" color="#ddd">
+                    <Picture />
+                  </el-icon>
                 </div>
               </div>
             </div>
@@ -89,8 +90,7 @@
           <div class="spec-section">
             <span class="spec-label">规格选择：</span>
             <div class="spec-options">
-              <span v-for="spec in specs" :key="spec"
-                :class="{ active: selectedSpec === spec }"
+              <span v-for="spec in specs" :key="spec" :class="{ active: selectedSpec === spec }"
                 @click="selectedSpec = spec">{{ spec }}
                 <span v-if="selectedSpec === spec" class="check">✓</span>
               </span>
@@ -100,10 +100,14 @@
           <!-- 分享/收藏 -->
           <div class="action-row">
             <span class="share-btn" @click="handleShare">
-              <el-icon><Share /></el-icon>分享
+              <el-icon>
+                <Share />
+              </el-icon>分享
             </span>
             <span class="favorite-btn" :class="{ active: isFavorited }" @click="toggleFavorite">
-              <el-icon><Star /></el-icon>{{ isFavorited ? '已关注' : '关注商品' }}
+              <el-icon>
+                <Star />
+              </el-icon>{{ isFavorited ? '已关注' : '关注商品' }}
             </span>
           </div>
 
@@ -117,7 +121,9 @@
               <span class="subtotal-price">¥{{ buySubtotal.toFixed(2) }}</span>
             </div>
             <el-button type="primary" size="large" class="add-cart-btn" @click="addToCart">
-              <el-icon><ShoppingCart /></el-icon>加入购物车
+              <el-icon>
+                <ShoppingCart />
+              </el-icon>加入购物车
             </el-button>
           </div>
 
@@ -138,14 +144,17 @@
     </div>
 
     <!-- 推荐区域 -->
-    <div class="recommend-section">
+    <div class="recommend-section" v-if="!notFound">
       <div class="recommend-sidebar">
         <div class="recommend-title">用户还喜欢</div>
         <div class="recommend-products">
           <div v-for="item in recommendProducts" :key="item.id" class="recommend-item" @click="goDetail(item.id)">
             <div class="recommend-img">
-              <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="item.name" />
-              <el-icon v-else size="40" color="#ddd"><Picture /></el-icon>
+              <img v-if="showImage(item.fileName)" :src="productImageUrl(item.fileName)" :alt="item.name"
+                @error="handleImageError(item.fileName)" />
+              <el-icon v-else size="40" color="#ddd">
+                <Picture />
+              </el-icon>
             </div>
             <p class="recommend-name">{{ item.name }}</p>
             <p class="recommend-price">¥{{ Number(item.price).toFixed(2) }}</p>
@@ -159,13 +168,19 @@
             <div class="combo-section">
               <div class="combo-products">
                 <template v-for="(item, index) in comboProducts" :key="item.id">
-                  <div class="combo-item" :class="{ selected: isComboSelected(item.id) }" @click="toggleComboItem(item.id)">
+                  <div class="combo-item" :class="{ selected: isComboSelected(item.id) }"
+                    @click="toggleComboItem(item.id)">
                     <span class="combo-check" :class="{ checked: isComboSelected(item.id) }">
-                      <el-icon v-if="isComboSelected(item.id)"><CircleCheck /></el-icon>
+                      <el-icon v-if="isComboSelected(item.id)">
+                        <CircleCheck />
+                      </el-icon>
                     </span>
                     <div class="combo-img">
-                      <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="item.name" />
-                      <el-icon v-else size="50" color="#ddd"><Picture /></el-icon>
+                      <img v-if="showImage(item.fileName)" :src="productImageUrl(item.fileName)" :alt="item.name"
+                        @error="handleImageError(item.fileName)" />
+                      <el-icon v-else size="50" color="#ddd">
+                        <Picture />
+                      </el-icon>
                     </div>
                     <p class="combo-name">{{ item.name }}</p>
                     <p class="combo-price">¥{{ Number(item.price).toFixed(2) }}</p>
@@ -183,7 +198,8 @@
                   <span class="combo-subtotal-label">合计：</span>
                   <span class="combo-subtotal">¥{{ comboSubtotal.toFixed(2) }}</span>
                 </div>
-                <el-input-number v-model="comboQuantity" :min="1" :max="comboMaxStock" :step-strictly="true" size="small" style="width: 140px" />
+                <el-input-number v-model="comboQuantity" :min="1" :max="comboMaxStock" :step-strictly="true"
+                  size="small" style="width: 140px" />
                 <el-button type="primary" size="large" class="combo-buy-btn" @click="buyCombo">组合购买</el-button>
               </div>
               <div class="combo-empty" v-else>
@@ -198,10 +214,22 @@
               <h3>规格参数</h3>
               <table class="spec-table">
                 <tbody>
-                  <tr><td>商品名称</td><td>{{ product?.name }}</td></tr>
-                  <tr><td>商品价格</td><td>¥{{ product ? Number(product.price).toFixed(2) : '0.00' }}</td></tr>
-                  <tr><td>商品库存</td><td>{{ product?.stock || 0 }} 件</td></tr>
-                  <tr><td>上架时间</td><td>{{ product?.createTime || '-' }}</td></tr>
+                  <tr>
+                    <td>商品名称</td>
+                    <td>{{ product?.name }}</td>
+                  </tr>
+                  <tr>
+                    <td>商品价格</td>
+                    <td>¥{{ product ? Number(product.price).toFixed(2) : '0.00' }}</td>
+                  </tr>
+                  <tr>
+                    <td>商品库存</td>
+                    <td>{{ product?.stock || 0 }} 件</td>
+                  </tr>
+                  <tr>
+                    <td>上架时间</td>
+                    <td>{{ product?.createTime || '-' }}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -220,10 +248,12 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ShoppingCart, Picture, Star, Share, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver, useImageFallback } from '@/composables/useImage'
 import { useCartStore } from '@/stores/cart'
+import { useUserStore } from '@/stores/user'
 import productApi from '@/api/product'
 import categoryApi from '@/api/category'
+import favoriteApi from '@/api/favorite'
 import Footer from '@/components/Footer.vue'
 import CartHover from '@/components/CartHover.vue'
 import HotSearchBar from '@/components/HotSearchBar.vue'
@@ -231,13 +261,15 @@ import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const productImageUrl = (fileName) => productApi.imageUrl(fileName)
 
 // 商品数据
 const product = ref(null)
 const loading = ref(false)
+// 商品不存在/已下架
+const notFound = ref(false)
 
 // 搜索
 const handleSearch = (keyword) => {
@@ -246,6 +278,9 @@ const handleSearch = (keyword) => {
 
 // 购物车
 const cartStore = useCartStore()
+
+// 用户（收藏登录）
+const userStore = useUserStore()
 
 // 分类名称
 const category1Name = ref('')
@@ -275,7 +310,7 @@ const isFavorited = ref(false)
 // 缩略图
 const thumbList = computed(() => {
   if (!product.value?.fileName) return ['', '', '', '']
-  // 模拟多张缩略图（首张商品图）（nginx 静态文件服务器）
+  // 模拟多张缩略图（首张商品图）
   return [product.value.fileName, '', '', '']
 })
 const currentThumbIndex = ref(0)
@@ -286,14 +321,17 @@ const currentImageSrc = computed(() => {
   return productImageUrl(currentFileName.value)
 })
 
+// 主图加载完成标记
+const mainImageLoaded = ref(false)
+watch(currentImageSrc, () => {
+  mainImageLoaded.value = false
+})
+
 // 图片加载失败登记
-const failedImages = ref(new Set())
-const handleImageError = (fileName) => {
-  failedImages.value.add(fileName)
-}
-const showThumb = (fileName) => !!fileName && !failedImages.value.has(fileName)
+const { showImage, handleImageError } = useImageFallback()
+const showThumb = showImage
 // 主图是否可显示（有文件名且未加载失败）
-const showCurrentImage = computed(() => showThumb(currentFileName.value))
+const showCurrentImage = computed(() => showImage(currentFileName.value))
 
 // 放大镜
 const mainImg = ref(null)
@@ -436,9 +474,15 @@ const activeTab = ref('combo')
 // 加载商品详情
 const loadProduct = async () => {
   loading.value = true
+  notFound.value = false
   try {
     const id = route.params.id
     const res = await productApi.getById(id)
+    // 商品不存在/已下架
+    if (!res.data) {
+      notFound.value = true
+      return
+    }
     product.value = res.data
     // 切换商品时回到首张缩略图
     currentThumbIndex.value = 0
@@ -447,19 +491,23 @@ const loadProduct = async () => {
       try {
         const catRes = await categoryApi.getById(res.data.categoryLevel1Id)
         category1Name.value = catRes.data?.name || ''
-      } catch (e) {}
+      } catch (e) { }
     }
     if (res.data?.categoryLevel2Id) {
       try {
         const catRes = await categoryApi.getById(res.data.categoryLevel2Id)
         category2Name.value = catRes.data?.name || ''
-      } catch (e) {}
+      } catch (e) { }
     }
     // 加载推荐商品
     loadRecommendProducts()
+    // 检查当前商品是否已收藏
+    checkFavoriteStatus()
     // 添加到浏览历史
     /* addToHistory(res.data) */
   } catch (e) {
+    // 加载失败（网络异常/服务不可用）
+    notFound.value = true
     ElMessage.error('加载商品详情失败')
   } finally {
     loading.value = false
@@ -509,9 +557,41 @@ const goCart = () => {
 }
 
 // 收藏切换
-const toggleFavorite = () => {
-  isFavorited.value = !isFavorited.value
-  ElMessage.success(isFavorited.value ? '已关注该商品' : '已取消关注')
+const toggleFavorite = async () => {
+  // 收藏登录
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后再收藏商品')
+    router.push('/login')
+    return
+  }
+  try {
+    if (isFavorited.value) {
+      // 已收藏 → 取消收藏
+      await favoriteApi.remove(product.value.id)
+      isFavorited.value = false
+      ElMessage.success('已取消关注')
+    } else {
+      // 未收藏 → 添加收藏
+      await favoriteApi.add(product.value.id)
+      isFavorited.value = true
+      ElMessage.success('已关注该商品')
+    }
+  } catch (e) { }
+}
+
+// 检查当前商品是否已收藏
+const checkFavoriteStatus = async () => {
+  if (!userStore.isLoggedIn || !product.value) {
+    isFavorited.value = false
+    return
+  }
+  try {
+    const res = await favoriteApi.getList()
+    const list = res.list || []
+    isFavorited.value = list.some(item => item.id === product.value.id)
+  } catch (e) {
+    isFavorited.value = false
+  }
 }
 
 // 分享
@@ -567,6 +647,7 @@ onMounted(() => {
   background: #fff;
   border-bottom: 1px solid #eee;
 }
+
 .top-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -575,11 +656,13 @@ onMounted(() => {
   gap: 40px;
   padding: 15px 20px;
 }
+
 .logo-img {
   height: 50px;
   width: auto;
   cursor: pointer;
 }
+
 .search-area {
   flex: 1;
   max-width: 600px;
@@ -597,16 +680,20 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 6px;
 }
+
 .breadcrumb .crumb {
   cursor: pointer;
 }
+
 .breadcrumb .crumb:hover {
   color: #ff6600;
 }
+
 .breadcrumb .crumb.current {
   color: #333;
   cursor: default;
 }
+
 .breadcrumb .sep {
   color: #ccc;
 }
@@ -618,6 +705,12 @@ onMounted(() => {
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
+/* 商品不存在/已下架 */
+.detail-empty {
+  padding: 80px 0;
+}
+
 .detail-content {
   display: flex;
   padding: 20px;
@@ -630,6 +723,7 @@ onMounted(() => {
   width: 400px;
   flex-shrink: 0;
 }
+
 .main-image {
   position: relative;
   width: 400px;
@@ -643,12 +737,24 @@ onMounted(() => {
   cursor: crosshair;
   overflow: hidden;
 }
+
 .main-image img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
+
+/* 下载完成后淡入 */
+.main-image img.loaded {
+  opacity: 1;
+}
+
 /* 放大镜标记 */
 .zoom-lens {
   position: absolute;
@@ -657,6 +763,7 @@ onMounted(() => {
   pointer-events: none;
   z-index: 10;
 }
+
 /* 大图预览面板 */
 .zoom-panel {
   position: fixed;
@@ -667,6 +774,7 @@ onMounted(() => {
   z-index: 1000;
   pointer-events: none;
 }
+
 .zoom-panel img {
   position: absolute;
   top: 0;
@@ -680,6 +788,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
 }
+
 .thumb-arrow {
   width: 24px;
   height: 60px;
@@ -692,18 +801,22 @@ onMounted(() => {
   color: #999;
   border-radius: 3px;
 }
+
 .thumb-arrow:hover {
   background: #ff6600;
   color: #fff;
 }
+
 .thumbs-wrapper {
   flex: 1;
   overflow: hidden;
 }
+
 .thumbs {
   display: flex;
   gap: 8px;
 }
+
 .thumb-item {
   width: 60px;
   height: 60px;
@@ -714,18 +827,16 @@ onMounted(() => {
   cursor: pointer;
   flex-shrink: 0;
 }
+
 .thumb-item.active {
   border-color: #ff6600;
 }
+
 .thumb-item img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
-
-/* 主图切换淡入淡出 */
-.img-fade-enter-active, .img-fade-leave-active { transition: opacity 0.25s ease; }
-.img-fade-enter-from, .img-fade-leave-to { opacity: 0; }
 
 /* 中间商品信息 */
 .product-info {
@@ -733,17 +844,20 @@ onMounted(() => {
   min-width: 0;
   padding: 0 10px;
 }
+
 .product-title {
   font-size: 20px;
   color: #333;
   margin: 0 0 8px;
   font-weight: bold;
 }
+
 .product-subtitle {
   font-size: 14px;
   color: #ff4e00;
   margin-bottom: 20px;
 }
+
 .price-section {
   background: #fff5f0;
   padding: 15px 20px;
@@ -752,29 +866,34 @@ onMounted(() => {
   align-items: center;
   border-radius: 4px;
 }
+
 .price-label {
   font-size: 14px;
   color: #999;
   width: 80px;
   flex-shrink: 0;
 }
+
 .price-value {
   font-size: 28px;
   font-weight: bold;
   color: #ff4e00;
 }
+
 .points-section {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
   padding: 8px 20px;
 }
+
 .points-label {
   font-size: 14px;
   color: #999;
   width: 80px;
   flex-shrink: 0;
 }
+
 .points-value {
   font-size: 14px;
   color: #333;
@@ -787,6 +906,7 @@ onMounted(() => {
   margin-bottom: 16px;
   padding: 8px 20px;
 }
+
 .spec-label {
   font-size: 14px;
   color: #999;
@@ -794,11 +914,13 @@ onMounted(() => {
   padding-top: 6px;
   flex-shrink: 0;
 }
+
 .spec-options {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
+
 .spec-options span {
   position: relative;
   padding: 6px 16px;
@@ -809,16 +931,19 @@ onMounted(() => {
   border-radius: 3px;
   background: #fff;
 }
+
 .spec-options span:hover {
   border-color: #ff6600;
   color: #ff6600;
 }
+
 .spec-options span.active {
   border-color: #ff6600;
   color: #ff6600;
   border-width: 2px;
   padding: 5px 15px;
 }
+
 .spec-options .check {
   position: absolute;
   bottom: 0;
@@ -837,7 +962,9 @@ onMounted(() => {
   padding: 10px 20px;
   margin-bottom: 20px;
 }
-.share-btn, .favorite-btn {
+
+.share-btn,
+.favorite-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -845,9 +972,12 @@ onMounted(() => {
   color: #666;
   cursor: pointer;
 }
-.share-btn:hover, .favorite-btn:hover {
+
+.share-btn:hover,
+.favorite-btn:hover {
   color: #ff6600;
 }
+
 .favorite-btn.active {
   color: #ff6600;
 }
@@ -860,20 +990,29 @@ onMounted(() => {
   padding: 20px 0;
   border-top: 1px solid #f0f0f0;
 }
+
 .quantity-selector {
   width: 140px;
   flex-shrink: 0;
 }
+
 .quantity-selector :deep(.el-input-number) {
   width: 100%;
 }
+
 .buy-subtotal {
   display: flex;
   align-items: center;
   gap: 4px;
   flex: 1;
 }
-.subtotal-label { font-size: 13px; color: #999; line-height: 1; }
+
+.subtotal-label {
+  font-size: 13px;
+  color: #999;
+  line-height: 1;
+}
+
 .subtotal-price {
   font-size: 20px;
   color: #ff4e00;
@@ -881,8 +1020,10 @@ onMounted(() => {
   line-height: 1;
   width: 75px;
   text-align: right;
-  font-variant-numeric: tabular-nums;   /* 等宽数字 */
+  font-variant-numeric: tabular-nums;
+  /* 等宽数字 */
 }
+
 .add-cart-btn {
   flex-shrink: 0;
   width: 160px;
@@ -891,10 +1032,12 @@ onMounted(() => {
   height: 50px;
   font-size: 16px;
 }
+
 .add-cart-btn:hover {
   background: #ff4e00;
   border-color: #ff4e00;
 }
+
 .stock-info {
   padding: 0 20px 10px;
   font-size: 13px;
@@ -907,6 +1050,7 @@ onMounted(() => {
   flex-shrink: 0;
   text-align: center;
 }
+
 .brand-logo {
   height: 120px;
   border: 1px solid #eee;
@@ -916,12 +1060,14 @@ onMounted(() => {
   margin-bottom: 12px;
   background: #fafafa;
 }
+
 .brand-name {
   font-size: 36px;
   font-weight: bold;
   color: #333;
   font-family: serif;
 }
+
 .brand-entry-btn {
   width: 100%;
 }
@@ -933,12 +1079,14 @@ onMounted(() => {
   display: flex;
   gap: 10px;
 }
+
 .recommend-sidebar {
   width: 200px;
   flex-shrink: 0;
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
 .recommend-title {
   padding: 10px 12px;
   font-size: 14px;
@@ -946,18 +1094,22 @@ onMounted(() => {
   color: #333;
   border-bottom: 1px solid #eee;
 }
+
 .recommend-products {
   padding: 10px;
 }
+
 .recommend-item {
   text-align: center;
   padding: 10px 0;
   border-bottom: 1px solid #f5f5f5;
   cursor: pointer;
 }
+
 .recommend-item:last-child {
   border-bottom: none;
 }
+
 .recommend-img {
   height: 80px;
   display: flex;
@@ -965,11 +1117,13 @@ onMounted(() => {
   justify-content: center;
   margin-bottom: 6px;
 }
+
 .recommend-img img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .recommend-name {
   font-size: 12px;
   color: #333;
@@ -978,6 +1132,7 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .recommend-price {
   font-size: 13px;
   color: #ff4e00;
@@ -995,6 +1150,7 @@ onMounted(() => {
 .combo-section {
   padding-top: 20px;
 }
+
 .combo-products {
   display: flex;
   align-items: center;
@@ -1002,6 +1158,7 @@ onMounted(() => {
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
+
 .combo-item {
   position: relative;
   width: 160px;
@@ -1012,13 +1169,16 @@ onMounted(() => {
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
+
 .combo-item:hover {
   border-color: #ffcc99;
 }
+
 .combo-item.selected {
   border-color: #ff6600;
   background: #fffaf5;
 }
+
 /* 勾选标记 */
 .combo-check {
   position: absolute;
@@ -1034,14 +1194,17 @@ onMounted(() => {
   background: #fff;
   transition: all 0.2s;
 }
+
 .combo-check.checked {
   background: #ff6600;
   border-color: #ff6600;
   color: #fff;
 }
+
 .combo-check .el-icon {
   font-size: 14px;
 }
+
 .combo-img {
   height: 100px;
   display: flex;
@@ -1049,11 +1212,13 @@ onMounted(() => {
   justify-content: center;
   margin-bottom: 8px;
 }
+
 .combo-img img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .combo-name {
   font-size: 12px;
   color: #333;
@@ -1062,16 +1227,19 @@ onMounted(() => {
   overflow: hidden;
   line-height: 16px;
 }
+
 .combo-price {
   font-size: 14px;
   color: #ff4e00;
   font-weight: bold;
 }
+
 .combo-plus {
   font-size: 24px;
   color: #999;
   font-weight: bold;
 }
+
 .combo-result {
   display: flex;
   align-items: center;
@@ -1080,16 +1248,19 @@ onMounted(() => {
   padding: 15px 20px;
   border-top: 1px solid #eee;
 }
+
 .combo-empty {
   display: flex;
   justify-content: center;
   padding: 20px 0;
 }
+
 .combo-equal {
   font-size: 24px;
   color: #999;
   font-weight: bold;
 }
+
 .combo-total {
   text-align: right;
   display: flex;
@@ -1097,28 +1268,33 @@ onMounted(() => {
   gap: 6px;
   flex-wrap: wrap;
 }
+
 .combo-label {
   font-size: 13px;
   color: #999;
   line-height: 1;
 }
+
 .combo-price-total {
   font-size: 16px;
   color: #ff4e00;
   font-weight: bold;
   line-height: 1;
 }
+
 .combo-times {
   font-size: 13px;
   color: #999;
   line-height: 1;
 }
+
 .combo-subtotal-label {
   font-size: 13px;
   color: #333;
   margin-left: 6px;
   line-height: 1;
 }
+
 .combo-subtotal {
   font-size: 22px;
   font-weight: bold;
@@ -1126,8 +1302,10 @@ onMounted(() => {
   line-height: 1;
   width: 120px;
   text-align: right;
-  font-variant-numeric: tabular-nums;   /* 等宽数字 */
+  font-variant-numeric: tabular-nums;
+  /* 等宽数字 */
 }
+
 .combo-buy-btn {
   width: 160px;
   height: 50px;
@@ -1135,6 +1313,7 @@ onMounted(() => {
   background: #ff6600;
   border-color: #ff6600;
 }
+
 .combo-buy-btn:hover {
   background: #ff4e00;
   border-color: #ff4e00;
@@ -1144,6 +1323,7 @@ onMounted(() => {
 .detail-desc {
   padding: 20px 0;
 }
+
 .detail-desc h3 {
   font-size: 16px;
   color: #333;
@@ -1151,24 +1331,29 @@ onMounted(() => {
   padding-left: 10px;
   border-left: 3px solid #ff6600;
 }
+
 .detail-desc h3:first-child {
   margin-top: 0;
 }
+
 .detail-desc p {
   font-size: 14px;
   color: #666;
   line-height: 1.8;
 }
+
 .spec-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
+
 .spec-table td {
   padding: 10px 15px;
   border: 1px solid #eee;
   color: #666;
 }
+
 .spec-table td:first-child {
   width: 120px;
   background: #fafafa;

@@ -1,26 +1,27 @@
-<template>
+﻿﻿<template>
   <div class="product-search">
     <!-- 搜索区域 -->
     <div class="search-bar">
-      <el-input v-model="queryParams.keyword" placeholder="输入商品关键字" clearable
-        style="width: 260px" @keyup.enter="handleSearch">
+      <el-input v-model="queryParams.keyword" placeholder="输入商品关键字" clearable style="width: 260px"
+        @keyup.enter="handleSearch">
         <template #prefix>
-          <el-icon><Search /></el-icon>
+          <el-icon>
+            <Search />
+          </el-icon>
         </template>
       </el-input>
-      <el-select v-model="queryParams.categoryLevel1Id" placeholder="全部分类" clearable
-        style="width: 160px">
+      <el-select v-model="queryParams.categoryLevel1Id" placeholder="全部分类" clearable style="width: 160px">
         <el-option v-for="c in categoryTree" :key="c.id" :label="c.name" :value="c.id" />
       </el-select>
-      <el-input-number v-model="queryParams.minPrice" :min="0" :precision="2"
-        placeholder="最低价" controls-position="right" style="width: 130px"
-        @keyup.enter="handleSearch"/>
+      <el-input-number v-model="queryParams.minPrice" :min="0" :precision="2" placeholder="最低价"
+        controls-position="right" style="width: 130px" @keyup.enter="handleSearch" />
       <span class="price-sep">—</span>
-      <el-input-number v-model="queryParams.maxPrice" :min="0" :precision="2"
-        placeholder="最高价" controls-position="right" style="width: 130px"
-        @keyup.enter="handleSearch"/>
+      <el-input-number v-model="queryParams.maxPrice" :min="0" :precision="2" placeholder="最高价"
+        controls-position="right" style="width: 130px" @keyup.enter="handleSearch" />
       <el-button type="primary" @click="handleSearch" @keyup.enter="handleSearch">
-        <el-icon><Search /></el-icon>搜索
+        <el-icon>
+          <Search />
+        </el-icon>搜索
       </el-button>
       <el-button @click="handleReset">重置</el-button>
     </div>
@@ -38,7 +39,9 @@
         <div v-for="item in list" :key="item.id" class="product-card">
           <div class="product-image">
             <img v-if="item.fileName" :src="productApi.imageUrl(item.fileName)" class="product-img" />
-            <el-icon v-else size="60" color="#ddd"><Picture /></el-icon>
+            <el-icon v-else size="60" color="#ddd">
+              <Picture />
+            </el-icon>
           </div>
           <!-- name/description 含 ES 高亮标签，用 v-html 渲染 -->
           <p class="product-name" v-html="item.name"></p>
@@ -50,8 +53,8 @@
       <!-- 分页 -->
       <div class="pagination" v-if="searched && total > 0">
         <el-pagination v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize"
-          :page-sizes="[12, 24, 48]" :total="total" layout="total, sizes, prev, pager, next"
-          background @size-change="loadData" @current-change="loadData" />
+          :page-sizes="[12, 24, 48]" :total="total" layout="total, sizes, prev, pager, next" background
+          @size-change="loadData" @current-change="loadData" />
       </div>
     </div>
   </div>
@@ -62,6 +65,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { Search, Picture } from '@element-plus/icons-vue'
 import productApi from '@/api/product'
 import categoryApi from '@/api/category'
+import { useImageFallback } from '@/composables/useImage'
+
+const { showImage, handleImageError } = useImageFallback()
 
 const loading = ref(false)
 const searched = ref(false)

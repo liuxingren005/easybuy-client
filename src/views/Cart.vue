@@ -25,7 +25,11 @@
         <table class="cart-table">
           <thead>
             <tr>
-              <th class="th-name" width="490">商品名称</th>
+              <th class="th-check" width="50">
+                <el-checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate"
+                  :disabled="selectableList.length === 0" title="全选" @change="toggleAll"/>
+              </th>
+              <th class="th-name" width="440">商品名称</th>
               <th class="th-attr" width="140">属性</th>
               <th class="th-qty" width="150">购买数量</th>
               <th class="th-subtotal" width="130">小计</th>
@@ -34,60 +38,82 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in cartStore.cartList" :key="item.id" :class="{ 'row-alt': index % 2 === 1 }">
+            <tr v-for="(item, index) in cartStore.cartList" :key="item.id"
+              :class="{ 'row-alt': index % 2 === 1, 'row-invalid': item.invalid }">
+              <td align="center">
+                <el-checkbox :model-value="selectedIds.has(item.id)" :disabled="item.invalid"
+                  @change="toggleSelect(item)" />
+              </td>
               <td>
-                <div class="cell-product" @click="goDetail(item.id)">
+                <div class="cell-product" @click="!item.invalid && goDetail(item.id)">
                   <div class="product-thumb">
-                    <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="stripHtml(item.name)" />
-                    <el-icon v-else size="50" color="#ddd"><Picture /></el-icon>
+                    <img v-if="showImage(item.fileName)" :src="productImageUrl(item.fileName)"
+                      :alt="stripHtml(item.name)" @error="handleImageError(item.fileName)" />
+                    <el-icon v-else size="50" color="#ddd">
+                      <Picture />
+                    </el-icon>
                   </div>
                   <span class="product-name">{{ item.name }}</span>
+                  <el-tag v-if="item.invalid" type="danger" size="small" effect="plain">商品不存在或已下架</el-tag>
                 </div>
               </td>
               <td align="center" class="cell-attr">颜色：默认</td>
               <td align="center">
                 <div class="qty-control">
-                  <el-button size="small" circle @click="decreaseQty(item)">
-                    <el-icon><Minus /></el-icon>
+                  <el-button size="small" circle :disabled="item.invalid" @click="decreaseQty(item)">
+                    <el-icon>
+                      <Minus />
+                    </el-icon>
                   </el-button>
                   <el-input-number v-model="item.quantity" :min="1" :max="item.stock || 99" size="small"
-                    :controls="false" style="width: 60px" @change="onQtyChange(item)" />
-                  <el-button size="small" circle @click="increaseQty(item)">
-                    <el-icon><Plus /></el-icon>
+                    :controls="false" :disabled="item.invalid" style="width: 60px" @change="onQtyChange(item)" />
+                  <el-button size="small" circle :disabled="item.invalid" @click="increaseQty(item)">
+                    <el-icon>
+                      <Plus />
+                    </el-icon>
                   </el-button>
                 </div>
               </td>
               <td align="center" class="cell-subtotal">
-                ￥{{ (Number(item.price) * item.quantity).toFixed(2) }}
+                <template v-if="item.invalid">--</template>
+                <template v-else>￥{{ (Number(item.price) * item.quantity).toFixed(2) }}</template>
               </td>
               <td align="center" class="cell-points">
-                {{ Math.floor(Number(item.price)) * item.quantity }}R
+                <template v-if="item.invalid">--</template>
+                <template v-else>{{ Math.floor(Number(item.price)) * item.quantity }}R</template>
               </td>
               <td align="center" class="cell-action">
                 <el-button link type="danger" @click="handleRemove(item)">删除</el-button>
-                <el-button link type="primary" @click="handleFavorite(item)">加入收藏</el-button>
+                <el-button link :type="favoriteIds.has(item.id) ? 'success' : 'primary'" :disabled="item.invalid"
+                  @click="handleFavorite(item)">{{ favoriteIds.has(item.id) ? '已收藏' : '加入收藏' }}</el-button>
               </td>
             </tr>
             <!-- 合计 -->
             <tr class="row-total">
-              <td colspan="6">
+              <td colspan="7">
                 <div class="total-bar">
                   <el-button size="default" plain class="clear-cart" @click="handleClearCart">
-                    <el-icon><Delete /></el-icon>清空购物车
+                    <el-icon>
+                      <Delete />
+                    </el-icon>清空购物车
                   </el-button>
                   <span class="total-text">
-                    商品总价：<b class="total-price">￥{{ cartStore.totalAmount.toFixed(2) }}</b>
+                    已选商品 <b class="selected-count">{{ selectedCount }}</b> 件，合计：<b
+                      class="total-price">￥{{ selectedAmount.toFixed(2) }}</b>
                   </span>
                 </div>
               </td>
             </tr>
             <!-- 操作 -->
             <tr class="row-actions">
-              <td colspan="6" align="right">
+              <td colspan="7" align="right">
                 <el-button size="large" @click="goHome">
-                  <el-icon><ArrowLeft /></el-icon>继续购物
+                  <el-icon>
+                    <ArrowLeft />
+                  </el-icon>继续购物
                 </el-button>
-                <el-button size="large" type="primary" class="checkout-btn" @click="goCheckout">
+                <el-button size="large" type="primary" class="checkout-btn" :disabled="selectedItems.length === 0"
+                  @click="goCheckout">
                   去结算
                 </el-button>
               </td>
@@ -103,30 +129,104 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Picture, Plus, Minus, ArrowLeft, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver, useImageFallback } from '@/composables/useImage'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import productApi from '@/api/product'
+import favoriteApi from '@/api/favorite'
 import { stripHtml } from '@/utils/stripHtml'
 import Footer from '@/components/Footer.vue'
 import MainNav from '@/components/MainNav.vue'
 
 const router = useRouter()
-const { img } = useImage()
+const { img } = useImageResolver()
+const { showImage, handleImageError } = useImageFallback()
 const cartStore = useCartStore()
 const userStore = useUserStore()
 
 // 商品图片地址
 const productImageUrl = (fileName) => productApi.imageUrl(fileName)
 
-// 页面加载时拉取购物车
-onMounted(() => {
-  cartStore.load()
+// 收藏列表
+const favoriteList = ref([])
+
+// 已收藏商品ID集合
+const favoriteIds = computed(() => new Set(favoriteList.value.map(item => item.id)))
+
+// 页面加载时拉取购物车与收藏列表
+onMounted(async () => {
+  await cartStore.load()
+  loadFavorites()
+  // 默认全选有效商品
+  cartStore.cartList.forEach(item => {
+    if (!item.invalid) selectedIds.value.add(item.id)
+  })
 })
+
+// 已选商品ID集合（仅有效商品）
+const selectedIds = ref(new Set())
+
+// 可选商品（失效商品不可结算）
+const selectableList = computed(() => cartStore.cartList.filter(i => !i.invalid))
+
+// 已选商品
+const selectedItems = computed(() => cartStore.cartList.filter(i => !i.invalid && selectedIds.value.has(i.id)))
+
+// 全选状态
+const isAllSelected = computed(() =>
+  selectableList.value.length > 0 && selectedItems.value.length === selectableList.value.length
+)
+
+// 半选状态
+const isIndeterminate = computed(() => selectedItems.value.length > 0 && !isAllSelected.value)
+
+// 已选数量
+const selectedCount = computed(() => selectedItems.value.reduce((sum, item) => sum + item.quantity, 0))
+
+// 已选金额
+const selectedAmount = computed(() =>
+  selectedItems.value.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+)
+
+// 失效商品自动移除
+watch(() => cartStore.cartList, (list) => {
+  list.forEach(item => {
+    if (item.invalid) selectedIds.value.delete(item.id)
+  })
+})
+
+// 切换单选
+const toggleSelect = (item) => {
+  if (selectedIds.value.has(item.id)) {
+    selectedIds.value.delete(item.id)
+  } else {
+    selectedIds.value.add(item.id)
+  }
+}
+
+// 全选/取消全选
+const toggleAll = (checked) => {
+  selectableList.value.forEach(item => {
+    if (checked) {
+      selectedIds.value.add(item.id)
+    } else {
+      selectedIds.value.delete(item.id)
+    }
+  })
+}
+
+// 加载收藏列表
+const loadFavorites = async () => {
+  if (!userStore.isLoggedIn) return
+  try {
+    const res = await favoriteApi.getList()
+    favoriteList.value = res.list || []
+  } catch (e) { }
+}
 
 // 清空购物车
 const handleClearCart = () => {
@@ -142,7 +242,7 @@ const handleClearCart = () => {
   }).then(async () => {
     await cartStore.clearCart()
     ElMessage.success('购物车已清空')
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 // 增加
@@ -187,12 +287,25 @@ const handleRemove = (item) => {
   }).then(async () => {
     await cartStore.removeFromCart(item.id)
     ElMessage.success('已移除购物车')
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
-// 加入收藏（模拟）
-const handleFavorite = (item) => {
-  ElMessage.success(`已收藏「${item.name}」`)
+// 加入收藏/取消收藏（与收藏夹同步）
+const handleFavorite = async (item) => {
+  // 收藏需登录
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后再收藏商品')
+    router.push('/login')
+    return
+  }
+  const isFavorited = favoriteIds.value.has(item.id)
+  try {
+    const res = isFavorited
+      ? await favoriteApi.remove(item.id)
+      : await favoriteApi.add(item.id)
+    favoriteList.value = res.list || []
+    ElMessage.success(isFavorited ? '已取消收藏' : `已收藏「${item.name}」`)
+  } catch (e) { }
 }
 
 // 结算
@@ -202,7 +315,11 @@ const goCheckout = () => {
     router.push('/login')
     return
   }
-  router.push('/checkout')
+  if (selectedItems.value.length === 0) {
+    ElMessage.warning('请先选择要结算的商品')
+    return
+  }
+  router.push({ path: '/checkout', query: { ids: selectedItems.value.map(i => i.id).join(',') } })
 }
 
 // 跳转商品详情
@@ -227,6 +344,7 @@ const goHome = () => {
   background: #fff;
   border-bottom: 1px solid #eee;
 }
+
 .top-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -235,11 +353,13 @@ const goHome = () => {
   gap: 20px;
   padding: 15px 20px;
 }
+
 .logo-img {
   height: 50px;
   width: auto;
   cursor: pointer;
 }
+
 .page-title {
   font-size: 20px;
   color: #ff6600;
@@ -268,14 +388,17 @@ const goHome = () => {
   background: #fff;
   border: 1px solid #e8e8e8;
 }
+
 .cart-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
+
 .cart-table thead tr {
   background: #f5f5f5;
 }
+
 .cart-table th {
   padding: 12px 10px;
   text-align: center;
@@ -283,17 +406,39 @@ const goHome = () => {
   font-weight: normal;
   border-bottom: 1px solid #e8e8e8;
 }
+
+/* 选项 */
+.th-check {
+  text-align: center;
+}
+
 .th-name {
   text-align: left !important;
   padding-left: 20px !important;
 }
+
 .cart-table td {
   padding: 16px 10px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
 }
+
 .row-alt {
   background: #fafafa;
+}
+
+:deep(.el-checkbox__inner) {
+  border-radius: 50%; /* 方形 → 圆形 */
+}
+
+/* 失效商品：整行置灰（操作列保持可点击） */
+.row-invalid td {
+  opacity: 0.55;
+}
+
+.row-invalid .cell-action,
+.row-invalid .el-tag {
+  opacity: 1;
 }
 
 /* 商品单元格 */
@@ -302,8 +447,10 @@ const goHome = () => {
   align-items: center;
   gap: 12px;
   padding-left: 10px;
-  cursor: pointer; /* 单项可点击跳转详情页 */
+  cursor: pointer;
+  /* 单项可点击跳转详情页 */
 }
+
 .product-thumb {
   width: 73px;
   height: 73px;
@@ -314,21 +461,24 @@ const goHome = () => {
   flex-shrink: 0;
   background: #fff;
 }
+
 .product-thumb img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+
 .product-name {
   font-size: 13px;
   color: #333;
   cursor: pointer;
   flex: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: box;
+  line-clamp: 2;
+  box-orient: vertical;
   overflow: hidden;
 }
+
 .product-name:hover {
   color: #ff6600;
 }
@@ -339,6 +489,7 @@ const goHome = () => {
   align-items: center;
   gap: 6px;
 }
+
 .qty-control :deep(.el-input__inner) {
   text-align: center;
 }
@@ -347,9 +498,11 @@ const goHome = () => {
   color: #ff4e00;
   font-weight: bold;
 }
+
 .cell-points {
   color: #666;
 }
+
 .cell-action {
   white-space: nowrap;
 }
@@ -359,23 +512,32 @@ const goHome = () => {
   padding: 20px;
   border-bottom: none;
 }
+
 .total-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .clear-cart {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+
 .clear-cart .el-icon {
   margin-right: 0;
 }
+
 .total-text {
   font-size: 14px;
   color: #333;
 }
+
+.selected-count {
+  color: #ff4e00;
+}
+
 .total-price {
   font-size: 22px;
   color: #ff4e00;
@@ -388,6 +550,7 @@ const goHome = () => {
   text-align: right;
   border-bottom: none;
 }
+
 .checkout-btn {
   background: #ff6600;
   border-color: #ff6600;
@@ -396,6 +559,7 @@ const goHome = () => {
   font-size: 16px;
   margin-left: 12px;
 }
+
 .checkout-btn:hover {
   background: #ff4e00;
   border-color: #ff4e00;

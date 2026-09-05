@@ -35,8 +35,8 @@
           </el-form-item>
 
           <el-form-item prop="password">
-            <el-input v-model="form.password" type="password" placeholder="密码" :prefix-icon="Lock"
-              show-password @keyup.enter="handleLogin" />
+            <el-input v-model="form.password" type="password" placeholder="密码" :prefix-icon="Lock" show-password
+              @keyup.enter="handleLogin" />
           </el-form-item>
 
           <div class="form-options">
@@ -54,18 +54,19 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 // 图片资源
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const formRef = ref()
 const loading = ref(false)
@@ -80,6 +81,34 @@ const rules = {
   loginName: [{ required: true, message: '请输入用户名或邮箱', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
+
+// 监听路由 query.reason：被踢下线 / 登录过期
+// immediate：首次进入 /login 时触发；watch 监听：同一组件复用时触发
+watch(
+  () => route.query.reason,
+  (reason, oldReason) => {
+    if (!reason || reason === oldReason) return
+    if (reason === 'kicked') {
+      ElMessageBox.alert('您的账号已在其他设备登录，您已被迫下线', '下线提示', {
+        type: 'warning',
+        confirmButtonText: '我知道了',
+        callback: () => {
+          // 清空 query 并替换当前路由，避免刷新重复弹窗
+          router.replace({ path: '/login', query: {} })
+        },
+      })
+    } else if (reason === 'expired') {
+      ElMessageBox.alert('登录已过期，请重新登录', '登录提示', {
+        type: 'warning',
+        confirmButtonText: '我知道了',
+        callback: () => {
+          router.replace({ path: '/login', query: {} })
+        },
+      })
+    }
+  },
+  { immediate: true }
+)
 
 const handleLogin = async () => {
   await formRef.value.validate(async (valid) => {
@@ -121,10 +150,23 @@ const handleLogin = async () => {
   border-bottom: 1px solid #eee;
 }
 
-.top-bar .divider { color: #ddd; }
-.top-bar .link { color: #ff6600; font-weight: bold; }
-.top-bar .link-muted { color: #999; text-decoration: none; }
-.top-bar .link-muted:hover { color: #ff6600; }
+.top-bar .divider {
+  color: #ddd;
+}
+
+.top-bar .link {
+  color: #ff6600;
+  font-weight: bold;
+}
+
+.top-bar .link-muted {
+  color: #999;
+  text-decoration: none;
+}
+
+.top-bar .link-muted:hover {
+  color: #ff6600;
+}
 
 .auth-body {
   display: flex;
@@ -168,8 +210,15 @@ const handleLogin = async () => {
   margin-bottom: 30px;
 }
 
-.form-header h2 { font-size: 26px; color: #333; }
-.form-header span { font-size: 13px; color: #999; }
+.form-header h2 {
+  font-size: 26px;
+  color: #333;
+}
+
+.form-header span {
+  font-size: 13px;
+  color: #999;
+}
 
 .form-options {
   display: flex;

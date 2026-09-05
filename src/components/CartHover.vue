@@ -1,7 +1,9 @@
 <template>
   <div class="cart-hover">
     <div class="cart-btn" @click="goCart" @mouseenter="onEnter" @mouseleave="onLeave">
-      <el-icon><ShoppingCart /></el-icon>
+      <el-icon>
+        <ShoppingCart />
+      </el-icon>
       <span class="cart-label">购物车</span>
       <span v-if="cartStore.totalCount > 0" class="cart-badge">{{ cartStore.totalCount }}</span>
     </div>
@@ -14,19 +16,31 @@
           <el-button link type="primary" size="small" @click="goCart">去购物车</el-button>
         </div>
         <div class="dropdown-list">
-          <div v-for="item in cartStore.cartList" :key="item.id" class="dropdown-item" @click="goDetail(item.id)">
+          <div v-for="item in cartStore.cartList" :key="item.id" class="dropdown-item"
+            :class="{ 'item-invalid': item.invalid }" @click="!item.invalid && goDetail(item.id)">
             <div class="item-img">
-              <img v-if="item.fileName" :src="productImageUrl(item.fileName)" :alt="item.name" />
-              <el-icon v-else size="32" color="#ddd"><Picture /></el-icon>
+              <img v-if="showImage(item.fileName)" :src="productImageUrl(item.fileName)" :alt="item.name"
+                @error="handleImageError(item.fileName)" />
+              <el-icon v-else size="32" color="#ddd">
+                <Picture />
+              </el-icon>
             </div>
             <div class="item-info">
-              <div class="item-name" :title="item.name">{{ item.name }}</div>
+              <div class="item-name-row">
+                <span class="item-name" :title="item.name">{{ item.name }}</span>
+                <el-tag v-if="item.invalid" type="danger" size="small" effect="plain">商品不存在或已下架</el-tag>
+              </div>
               <div class="item-bottom">
-                <span class="item-price">¥{{ Number(item.price).toFixed(2) }}</span>
+                <span class="item-price">
+                  <template v-if="item.invalid">--</template>
+                  <template v-else>¥{{ Number(item.price).toFixed(2) }}</template>
+                </span>
                 <span class="item-qty">x{{ item.quantity }}</span>
               </div>
             </div>
-            <el-icon class="item-delete" @click.stop="removeItem(item.id)"><Close /></el-icon>
+            <el-icon class="item-delete" @click.stop="removeItem(item.id)">
+              <Close />
+            </el-icon>
           </div>
         </div>
         <div class="dropdown-footer">
@@ -36,7 +50,9 @@
       </template>
       <template v-else>
         <div class="dropdown-empty">
-          <el-icon size="40" color="#ccc"><ShoppingCart /></el-icon>
+          <el-icon size="40" color="#ccc">
+            <ShoppingCart />
+          </el-icon>
           <p>购物车是空的</p>
           <el-button link type="primary" @click="goHome">去逛逛</el-button>
         </div>
@@ -52,9 +68,11 @@ import { ShoppingCart, Picture, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCartStore } from '@/stores/cart'
 import productApi from '@/api/product'
+import { useImageFallback } from '@/composables/useImage'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const { showImage, handleImageError } = useImageFallback()
 const show = ref(false)
 let hideTimer = null
 
@@ -111,7 +129,7 @@ const removeItem = (id) => {
   }).then(async () => {
     await cartStore.removeFromCart(id)
     ElMessage.success('已移除')
-  }).catch(() => {})
+  }).catch(() => { })
 }
 </script>
 
@@ -135,10 +153,12 @@ const removeItem = (id) => {
   transition: all 0.2s;
   white-space: nowrap;
 }
+
 .cart-btn:hover {
   border-color: #ff6600;
   color: #ff6600;
 }
+
 .cart-badge {
   display: inline-flex;
   align-items: center;
@@ -166,6 +186,7 @@ const removeItem = (id) => {
   z-index: 1000;
   overflow: hidden;
 }
+
 .cart-dropdown::before {
   content: '';
   position: absolute;
@@ -192,6 +213,7 @@ const removeItem = (id) => {
   max-height: 280px;
   overflow-y: auto;
 }
+
 .dropdown-item {
   display: flex;
   align-items: center;
@@ -200,9 +222,11 @@ const removeItem = (id) => {
   transition: background 0.15s;
   cursor: pointer;
 }
+
 .dropdown-item:hover {
   background: #fafafa;
 }
+
 .item-img {
   width: 52px;
   height: 52px;
@@ -214,37 +238,62 @@ const removeItem = (id) => {
   border-radius: 4px;
   overflow: hidden;
 }
+
 .item-img img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
+
 .item-info {
   flex: 1;
   min-width: 0;
 }
+
+.item-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .item-name {
   font-size: 13px;
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-bottom: 4px;
+  flex: 1;
+  min-width: 0;
 }
+
+/* 失效商品 */
+.dropdown-item.item-invalid {
+  cursor: default;
+}
+
+.dropdown-item.item-invalid .item-img,
+.dropdown-item.item-invalid .item-info {
+  opacity: 0.55;
+}
+
 .item-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
 }
+
 .item-price {
   color: #ff4e00;
   font-weight: 500;
 }
+
 .item-qty {
   color: #999;
   font-size: 12px;
 }
+
 .item-delete {
   color: #ccc;
   cursor: pointer;
@@ -252,6 +301,7 @@ const removeItem = (id) => {
   flex-shrink: 0;
   transition: color 0.2s;
 }
+
 .item-delete:hover {
   color: #ff4e00;
 }
@@ -264,10 +314,12 @@ const removeItem = (id) => {
   border-top: 1px solid #f0f0f0;
   background: #fafafa;
 }
+
 .total-text {
   font-size: 13px;
   color: #666;
 }
+
 .total-price {
   font-size: 18px;
   color: #ff4e00;
@@ -279,6 +331,7 @@ const removeItem = (id) => {
   text-align: center;
   color: #999;
 }
+
 .dropdown-empty p {
   margin: 8px 0 4px;
   font-size: 14px;

@@ -12,7 +12,8 @@
             <span class="picker-title">选择收货地址</span>
             <div class="header-actions">
               <el-button size="small" type="primary" link @click="handleAddAddress">+ 新增地址</el-button>
-              <router-link to="/user/addresses" class="manage-link" @click="cityPickerVisible = false">管理地址 ›</router-link>
+              <router-link to="/user/addresses" class="manage-link" @click="cityPickerVisible = false">管理地址
+                ›</router-link>
             </div>
           </div>
           <!-- 用户地址列表 -->
@@ -27,7 +28,9 @@
                 </div>
                 <div v-if="addr.remark" class="addr-remark">{{ addr.remark }}</div>
               </div>
-              <el-icon v-if="selectedAddressId === addr.id" class="addr-check"><CircleCheck /></el-icon>
+              <el-icon v-if="selectedAddressId === addr.id" class="addr-check">
+                <CircleCheck />
+              </el-icon>
             </div>
             <div v-if="userAddresses.length === 0" class="user-address-empty">
               <p>暂无收货地址，点击右上角"+ 新增地址"添加</p>
@@ -52,21 +55,18 @@
             <div v-for="group in provinceGroups" :key="group.initial" class="city-group">
               <span class="city-initial">{{ group.initial }}</span>
               <span v-for="prov in group.provinces" :key="prov" class="city-name"
-                :class="{ active: selectedProvince?.n === prov }"
-                @click="selectProvince(prov)">{{ prov }}</span>
+                :class="{ active: selectedProvince?.n === prov }" @click="selectProvince(prov)">{{ prov }}</span>
             </div>
           </div>
           <!-- 城市列表 -->
           <div v-else-if="currentLevel === 1" class="city-list">
             <span v-for="city in cityList" :key="city.code" class="city-name"
-              :class="{ active: selectedCityObj?.n === city.n }"
-              @click="selectCity(city)">{{ city.n }}</span>
+              :class="{ active: selectedCityObj?.n === city.n }" @click="selectCity(city)">{{ city.n }}</span>
           </div>
           <!-- 区县列表 -->
           <div v-else-if="currentLevel === 2" class="city-list">
             <span v-for="dist in districtList" :key="dist.code" class="city-name"
-              :class="{ active: selectedDistrict?.n === dist.n }"
-              @click="selectDistrict(dist)">{{ dist.n }}</span>
+              :class="{ active: selectedDistrict?.n === dist.n }" @click="selectDistrict(dist)">{{ dist.n }}</span>
             <span v-if="districtList.length === 0" class="city-empty">暂无区县数据</span>
           </div>
         </div>
@@ -90,21 +90,18 @@
             <div v-for="group in provinceGroups" :key="group.initial" class="city-group">
               <span class="city-initial">{{ group.initial }}</span>
               <span v-for="prov in group.provinces" :key="prov" class="city-name"
-                :class="{ active: selectedProvince?.n === prov }"
-                @click="selectProvince(prov)">{{ prov }}</span>
+                :class="{ active: selectedProvince?.n === prov }" @click="selectProvince(prov)">{{ prov }}</span>
             </div>
           </div>
           <!-- 城市列表 -->
           <div v-else-if="currentLevel === 1" class="city-list">
             <span v-for="city in cityList" :key="city.code" class="city-name"
-              :class="{ active: selectedCityObj?.n === city.n }"
-              @click="selectCity(city)">{{ city.n }}</span>
+              :class="{ active: selectedCityObj?.n === city.n }" @click="selectCity(city)">{{ city.n }}</span>
           </div>
           <!-- 区县列表 -->
           <div v-else-if="currentLevel === 2" class="city-list">
             <span v-for="dist in districtList" :key="dist.code" class="city-name"
-              :class="{ active: selectedDistrict?.n === dist.n }"
-              @click="selectDistrict(dist)">{{ dist.n }}</span>
+              :class="{ active: selectedDistrict?.n === dist.n }" @click="selectDistrict(dist)">{{ dist.n }}</span>
             <span v-if="districtList.length === 0" class="city-empty">暂无区县数据</span>
           </div>
         </div>
@@ -125,7 +122,7 @@
         <span class="divider">|</span>
         <router-link to="/user/orders" class="link-muted">我的订单</router-link>
         <span class="divider">|</span>
-        <span>收藏夹</span>
+        <router-link to="/user/favorites" class="link-muted">我的收藏</router-link>
         <span class="divider">|</span>
         <span>客户服务</span>
       </div>
@@ -300,36 +297,82 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 <style scoped>
 .top-bar {
-  background: #f7f7f7; border-bottom: 1px solid #eee;
-  font-size: 13px; color: #999;
+  background: #f7f7f7;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+  color: #999;
 }
+
 .top-inner {
-  max-width: 1200px; margin: 0 auto; padding: 8px 20px;
-  display: flex; justify-content: space-between; align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.top-bar .right { display: flex; align-items: center; gap: 8px; }
-.top-bar .divider { color: #ddd; }
-.top-bar .link { color: #ff6600; cursor: pointer; }
-.city-trigger { cursor: pointer; }
+
+.top-bar .right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-bar .divider {
+  color: #ddd;
+}
+
+.top-bar .link {
+  color: #ff6600;
+  cursor: pointer;
+}
+
+.city-trigger {
+  cursor: pointer;
+}
 
 /* 地址选择器 */
 /* .city-picker { max-height: 420px; overflow-y: auto; } */
 .city-picker-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
-.picker-title { font-size: 14px; color: #333; font-weight: 500; }
-.header-actions { display: flex; align-items: center; gap: 8px; }
-.manage-link { font-size: 12px; color: #ff6600; text-decoration: none; }
-.manage-link:hover { text-decoration: underline; }
+
+.picker-title {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manage-link {
+  font-size: 12px;
+  color: #ff6600;
+  text-decoration: none;
+}
+
+.manage-link:hover {
+  text-decoration: underline;
+}
 
 /* 用户地址列表 */
 .user-address-section {
   max-height: 180px;
   overflow-y: auto;
-  padding-right: 4px;     /* 滚动条 */
+  padding-right: 4px;
+  /* 滚动条 */
   margin-bottom: 4px;
 }
+
 /* 卡片 */
 .user-address-item {
   position: relative;
@@ -342,35 +385,155 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   min-height: 48px;
   box-sizing: border-box;
 }
-.user-address-item:hover { border-color: #ffd4b8; }
-.user-address-item.active { border-color: #ff6600; background: #fff5f0; }
-.addr-info { padding-right: 20px; }
-.addr-top { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-.addr-name { font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.addr-remark { font-size: 12px; color: #999; }
-.addr-check { position: absolute; top: 10px; right: 10px; color: #ff6600; font-size: 16px; }
-.user-address-empty { text-align: center; padding: 16px 0; color: #999; }
-.user-address-empty p { font-size: 13px; margin-bottom: 10px; }
+
+.user-address-item:hover {
+  border-color: #ffd4b8;
+}
+
+.user-address-item.active {
+  border-color: #ff6600;
+  background: #fff5f0;
+}
+
+.addr-info {
+  padding-right: 20px;
+}
+
+.addr-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.addr-name {
+  font-size: 13px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addr-remark {
+  font-size: 12px;
+  color: #999;
+}
+
+.addr-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #ff6600;
+  font-size: 16px;
+}
+
+.user-address-empty {
+  text-align: center;
+  padding: 16px 0;
+  color: #999;
+}
+
+.user-address-empty p {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
 
 .city-divider {
-  text-align: center; font-size: 12px; color: #ccc; padding: 8px 0 4px;
-  position: relative; margin-bottom: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #ccc;
+  padding: 8px 0 4px;
+  position: relative;
+  margin-bottom: 8px;
 }
-.city-divider::before {
-  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #eee;
-}
-.city-divider span { background: #fff; position: relative; padding: 0 10px; }
 
-.city-breadcrumb { display: flex; align-items: center; gap: 4px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
-.city-breadcrumb span { font-size: 12px; color: #999; cursor: pointer; }
-.city-breadcrumb span.active { color: #ff6600; font-weight: bold; }
-.city-breadcrumb .sep { color: #ddd; cursor: default; }
-.city-breadcrumb .city-clear { margin-left: auto; color: #ff6600; }
-.city-list { max-height: 200px; overflow-y: auto; }
-.city-group { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
-.city-initial { color: #ff6600; font-weight: bold; width: 16px; flex-shrink: 0; }
-.city-name { font-size: 12px; color: #666; cursor: pointer; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 4px; }
-.city-name:hover { background: #fff5f0; color: #ff6600; }
-.city-name.active { background: #ff6600; color: #fff; }
-.city-empty { font-size: 12px; color: #ccc; }
+.city-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: #eee;
+}
+
+.city-divider span {
+  background: #fff;
+  position: relative;
+  padding: 0 10px;
+}
+
+.city-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.city-breadcrumb span {
+  font-size: 12px;
+  color: #999;
+  cursor: pointer;
+}
+
+.city-breadcrumb span.active {
+  color: #ff6600;
+  font-weight: bold;
+}
+
+.city-breadcrumb .sep {
+  color: #ddd;
+  cursor: default;
+}
+
+.city-breadcrumb .city-clear {
+  margin-left: auto;
+  color: #ff6600;
+}
+
+.city-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.city-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.city-initial {
+  color: #ff6600;
+  font-weight: bold;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.city-name {
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.city-name:hover {
+  background: #fff5f0;
+  color: #ff6600;
+}
+
+.city-name.active {
+  background: #ff6600;
+  color: #fff;
+}
+
+.city-empty {
+  font-size: 12px;
+  color: #ccc;
+}
 </style>

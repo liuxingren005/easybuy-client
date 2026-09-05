@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="home-page">
     <!-- 顶部工具栏 -->
     <TopBar />
@@ -59,7 +59,7 @@
         <el-carousel height="340px" class="banner">
           <el-carousel-item v-for="(banner, i) in banners" :key="i">
             <div class="banner-slide" :style="{ background: banner.bg }" @click="goCategory(banner.categoryId)">
-              <!-- 轮播图片（nginx 静态文件服务器） -->
+              <!-- 轮播图片 -->
               <img v-if="banner.image" :src="banner.image" :alt="banner.title" class="banner-img" />
               <div class="banner-text">
                 <h2>{{ banner.title }}</h2>
@@ -143,7 +143,7 @@
         </div>
       </div>
       <div class="floor-body">
-        <!-- 左侧：楼层广告图（nginx 静态文件服务器）+ 二、三级分类 -->
+        <!-- 左侧：楼层广告图 + 二、三级分类 -->
         <div class="floor-left">
           <div class="floor-banner">
             <img v-if="floor.image" :src="floor.image" :alt="text(floor.category.name)" class="floor-banner-img" />
@@ -192,7 +192,7 @@
           <div v-if="!floor.loading && floor.products.length === 0" class="floor-empty">该分类下暂无商品</div>
         </div>
 
-        <!-- 右侧：推荐位图片（nginx 静态文件服务器） -->
+        <!-- 右侧：推荐位图片 -->
         <div class="floor-right">
           <div v-for="(side, i) in floor.sideImages" :key="i" class="floor-side">
             <img v-if="side" :src="side" :alt="text(floor.category.name)" class="floor-side-img" />
@@ -226,7 +226,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Picture, ShoppingCart, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 import { useCartStore } from '@/stores/cart'
 import { stripHtml } from '@/utils/stripHtml'
 import newsApi from '@/api/news'
@@ -245,7 +245,7 @@ const router = useRouter()
 const cartStore = useCartStore()
 
 // 图片资源
-const { img } = useImage()
+const { img } = useImageResolver()
 
 // 商品分类（接口数据 + 悬停面板）
 const catTree = ref([])               // 一级→二级→三级分类树
@@ -339,7 +339,7 @@ const text = (val) => stripHtml(val).replace(/\s+/g, ' ').trim()
 // 价格格式化
 const formatPrice = (val) => Number(val || 0).toFixed(2)
 
-// 商品图片地址（后端 nginx 静态文件服务器回传）
+// 商品图片地址
 const productImageUrl = (fileName) => productApi.imageUrl(fileName)
 
 // 图片加载失败登记
@@ -361,13 +361,13 @@ const bannerPresets = [
   { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', title: '大牌闪购', subtitle: '低至 5 折 · 限时抢购' }
 ]
 
-// 轮播广告：图片（nginx 静态文件服务器），副标题取一级分类及其二级分类名称
+// 轮播广告：图片，副标题取一级分类及其二级分类名称
 const banners = computed(() => {
   return bannerPresets.map((preset, i) => {
     const cat = catTree.value[i]
     const level2Names = level2Of(cat).slice(0, 3).map(c => text(c.name)).filter(Boolean)
     return {
-      image: '',                       // 广告图：（nginx 静态文件服务器）
+      image: '',                       // 广告图
       bg: preset.bg,
       title: preset.title,
       subtitle: level2Names.length > 0
@@ -395,8 +395,8 @@ const loadFloors = async () => {
     category: cat,
     products: [],
     loading: true,
-    image: '',                    // 楼层广告图：（nginx 静态文件服务器）
-    sideImages: ['', '']          // 右侧推荐位图：（nginx 静态文件服务器）
+    image: '',                    // 楼层广告图
+    sideImages: ['', '']          // 右侧推荐位图
   }))
   // 并发拉取各楼层商品（时间最近）
   await Promise.all(floors.value.map(async (floor) => {
@@ -660,7 +660,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-/* 轮播图片（nginx 静态文件服务器） */
+/* 轮播图片 */
 .banner-img {
   position: absolute;
   inset: 0;
@@ -1151,7 +1151,7 @@ onMounted(async () => {
   transform: scale(1.08);
 }
 
-/* 图片占位（nginx 静态文件服务器） */
+/* 图片占位 */
 .img-placeholder {
   width: 100%;
   height: 100%;

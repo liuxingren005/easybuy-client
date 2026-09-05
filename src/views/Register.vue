@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="auth-page">
     <!-- 顶部导航 -->
     <div class="top-bar">
@@ -56,8 +56,7 @@
             <div class="captcha-row">
               <el-input v-model="form.emailCode" placeholder="邮箱验证码 *" maxlength="6" />
               <el-button type="primary" plain class="send-code-btn"
-                :disabled="sendingCode || codeCountdown > 0 || !form.email"
-                @click="handleSendEmailCode">
+                :disabled="sendingCode || codeCountdown > 0 || !form.email" @click="handleSendEmailCode">
                 <span v-if="codeCountdown > 0">{{ codeCountdown }}s 后重发</span>
                 <span v-else-if="sendingCode">发送中...</span>
                 <span v-else>获取验证码</span>
@@ -100,14 +99,14 @@ import { useRouter } from 'vue-router'
 import { User, UserFilled, Lock, Message, Iphone } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 import userApi from '@/api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 // 图片资源
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const formRef = ref()
 const loading = ref(false)
@@ -293,9 +292,18 @@ const handleRegister = async () => {
   border-bottom: 1px solid #eee;
 }
 
-.top-bar .divider { color: #ddd; }
-.link-muted { color: #999; }
-.link { color: #ff6600; font-weight: bold; }
+.top-bar .divider {
+  color: #ddd;
+}
+
+.link-muted {
+  color: #999;
+}
+
+.link {
+  color: #ff6600;
+  font-weight: bold;
+}
 
 .auth-body {
   display: flex;
@@ -339,8 +347,15 @@ const handleRegister = async () => {
   margin-bottom: 24px;
 }
 
-.form-header h2 { font-size: 26px; color: #333; }
-.form-header span { font-size: 13px; color: #999; }
+.form-header h2 {
+  font-size: 26px;
+  color: #333;
+}
+
+.form-header span {
+  font-size: 13px;
+  color: #999;
+}
 
 .captcha-row {
   display: flex;
@@ -374,16 +389,21 @@ const handleRegister = async () => {
   border-color: #ff6600;
   color: #ff6600;
 }
+
 .send-code-btn:hover:not(:disabled) {
   background: #ff6600;
   color: #fff;
   border-color: #ff6600;
 }
+
 .send-code-btn:disabled {
   opacity: 0.6;
 }
 
-.agreement { margin-bottom: 20px; font-size: 13px; }
+.agreement {
+  margin-bottom: 20px;
+  font-size: 13px;
+}
 
 .submit-btn {
   width: 100%;
@@ -404,6 +424,7 @@ const handleRegister = async () => {
   color: #999;
   line-height: 1.4;
 }
+
 .code-tip {
   margin-top: 6px;
   padding: 6px 10px;
@@ -411,6 +432,7 @@ const handleRegister = async () => {
   border-radius: 4px;
   color: #ff6600;
 }
+
 .code-val {
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
@@ -419,6 +441,7 @@ const handleRegister = async () => {
   color: #ff6600;
   margin: 0 6px;
 }
+
 .code-copy {
   display: inline-block;
   margin-left: 8px;
@@ -430,6 +453,7 @@ const handleRegister = async () => {
   cursor: pointer;
   transition: background .2s;
 }
+
 .code-copy:hover {
   background: #ff8533;
 }

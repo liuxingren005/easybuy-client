@@ -2,19 +2,25 @@
   <div class="product-manage">
     <!-- 搜索区域 -->
     <div class="search-bar">
-      <el-input v-model="queryParams.name" placeholder="商品名称" clearable style="width: 200px" @keyup.enter="handleSearch"/>
-      <el-date-picker v-model="dateRange" type="daterange" range-separator="至"
-        start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"
-        style="width: 320px" />
+      <el-input v-model="queryParams.name" placeholder="商品名称" clearable style="width: 200px"
+        @keyup.enter="handleSearch" />
+      <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+        end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 320px" />
       <el-button type="primary" @click="handleSearch">
-        <el-icon><Search /></el-icon>查询
+        <el-icon>
+          <Search />
+        </el-icon>查询
       </el-button>
       <el-button @click="handleReset">重置</el-button>
       <el-button type="success" @click="openDialog(null)">
-        <el-icon><Plus /></el-icon>添加商品
+        <el-icon>
+          <Plus />
+        </el-icon>添加商品
       </el-button>
       <el-button type="warning" plain @click="handleRebuildIndex">
-        <el-icon><Refresh /></el-icon>同步ES索引
+        <el-icon>
+          <Refresh />
+        </el-icon>同步ES索引
       </el-button>
     </div>
 
@@ -23,8 +29,13 @@
       <el-table-column type="index" label="#" width="50" align="center" />
       <el-table-column label="图片" width="90" align="center">
         <template #default="{ row }">
-          <img v-if="row.fileName" :src="productApi.imageUrl(row.fileName)" class="product-thumb" />
-          <el-icon v-else size="32" color="#ddd"><Picture /></el-icon>
+          <div class="product-thumb-box">
+            <img v-if="row.fileName && !brokenImages[row.id]" :src="productApi.imageUrl(row.fileName)"
+              class="product-thumb" @error="brokenImages[row.id] = true" />
+            <el-icon v-else size="32" color="#ddd">
+              <Picture />
+            </el-icon>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="name" label="商品名称" min-width="140" show-overflow-tooltip />
@@ -51,8 +62,8 @@
     <!-- 分页 -->
     <div class="pagination" v-if="total > 0">
       <el-pagination v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize"
-        :page-sizes="[5, 10, 20, 50]" :total="total" layout="total, sizes, prev, pager, next, jumper"
-        background @size-change="loadData" @current-change="loadData" />
+        :page-sizes="[5, 10, 20, 50]" :total="total" layout="total, sizes, prev, pager, next, jumper" background
+        @size-change="loadData" @current-change="loadData" />
     </div>
 
     <!-- 添加/编辑弹窗 -->
@@ -63,16 +74,16 @@
         </el-form-item>
         <el-form-item label="商品分类" prop="categoryLevel1Id">
           <div class="category-select">
-            <el-select v-model="editingProduct.categoryLevel1Id" placeholder="一级分类"
-              style="width: 150px" @change="onLevel1Change">
+            <el-select v-model="editingProduct.categoryLevel1Id" placeholder="一级分类" style="width: 150px"
+              @change="onLevel1Change">
               <el-option v-for="c in categoryTree" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
-            <el-select v-model="editingProduct.categoryLevel2Id" placeholder="二级分类"
-              style="width: 150px" :disabled="!editingProduct.categoryLevel1Id" @change="onLevel2Change">
+            <el-select v-model="editingProduct.categoryLevel2Id" placeholder="二级分类" style="width: 150px"
+              :disabled="!editingProduct.categoryLevel1Id" @change="onLevel2Change">
               <el-option v-for="c in level2Options" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
-            <el-select v-model="editingProduct.categoryLevel3Id" placeholder="三级分类（可选）"
-              style="width: 150px" :disabled="!editingProduct.categoryLevel2Id">
+            <el-select v-model="editingProduct.categoryLevel3Id" placeholder="三级分类" style="width: 150px"
+              :disabled="!editingProduct.categoryLevel2Id">
               <el-option v-for="c in level3Options" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
           </div>
@@ -84,21 +95,25 @@
           <el-input-number v-model="editingProduct.stock" :min="0" :step="1" />
         </el-form-item>
         <el-form-item label="商品图片">
-          <!-- 图片上传到 SFTP 文件服务器 -->
-          <el-upload class="image-uploader" :show-file-list="false" accept="image/*"
-            :before-upload="beforeUpload" :http-request="customUpload">
-            <img v-if="editingProduct.fileName" :src="productApi.imageUrl(editingProduct.fileName)"
-              class="uploaded-image" />
+          <!-- 图片上传 -->
+          <el-upload class="image-uploader" :show-file-list="false" accept="image/*" :before-upload="beforeUpload"
+            :http-request="customUpload">
+            <img v-if="localPreviewUrl" :src="localPreviewUrl" class="uploaded-image" />
+            <img v-else-if="editingProduct.fileName && !dialogImageBroken"
+              :src="productApi.imageUrl(editingProduct.fileName)" class="uploaded-image"
+              @error="dialogImageBroken = true" />
             <div v-else class="upload-placeholder">
-              <el-icon size="24"><Plus /></el-icon>
+              <el-icon size="24">
+                <Plus />
+              </el-icon>
               <span>上传图片</span>
             </div>
           </el-upload>
           <span class="upload-hint">支持 jpg/png/gif，大小不超过 5MB</span>
         </el-form-item>
         <el-form-item label="商品描述">
-          <el-input v-model="editingProduct.description" type="textarea" :rows="3"
-            placeholder="请输入商品描述" maxlength="500" show-word-limit />
+          <el-input v-model="editingProduct.description" type="textarea" :rows="3" placeholder="请输入商品描述" maxlength="500"
+            show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -124,6 +139,13 @@ const dateRange = ref([])
 const dialogVisible = ref(false)
 const productFormRef = ref()
 const categoryTree = ref([])
+// 待上传的本地图片文件
+const pendingFile = ref(null)
+// 本地预览地址
+const localPreviewUrl = ref('')
+// 图片加载失败标记
+const brokenImages = reactive({})
+const dialogImageBroken = ref(false)
 
 const queryParams = reactive({
   pageNum: 1,
@@ -245,8 +267,8 @@ const beforeUpload = (file) => {
   return isImage && under5M
 }
 
-// 自定义上传：调用后端接口写入 SFTP 文件服务器
-const customUpload = async ({ file }) => {
+// 自定义上传
+/* const customUpload = async ({ file }) => {
   try {
     const res = await productApi.upload(file)
     editingProduct.fileName = res.fileName
@@ -254,10 +276,23 @@ const customUpload = async ({ file }) => {
   } catch (e) {
 
   }
+} */
+// 自定义上传：暂存本地文件并本地预览
+const customUpload = ({ file }) => {
+  pendingFile.value = file
+  localPreviewUrl.value = URL.createObjectURL(file)
 }
 
 // 打开弹窗
 const openDialog = (row) => {
+  // 释放旧的预览资源
+  if (localPreviewUrl.value) {
+    URL.revokeObjectURL(localPreviewUrl.value)
+    localPreviewUrl.value = ''
+  }
+  pendingFile.value = null
+  // 图片加载失败标记
+  dialogImageBroken.value = false
   if (row) {
     Object.assign(editingProduct, row)
   } else {
@@ -276,6 +311,11 @@ const handleSubmit = async () => {
 
     submitLoading.value = true
     try {
+      // 上传文件
+      if (pendingFile.value) {
+        const res = await productApi.upload(pendingFile.value)
+        editingProduct.fileName = res.fileName
+      }
       if (editingProduct.id) {
         await productApi.update({ ...editingProduct })
         ElMessage.success('修改成功，已同步搜索索引')
@@ -284,6 +324,16 @@ const handleSubmit = async () => {
         ElMessage.success('添加成功，已同步搜索索引')
       }
       dialogVisible.value = false
+      // 释放本地预览并清空待上传文件
+      if (localPreviewUrl.value) {
+        URL.revokeObjectURL(localPreviewUrl.value)
+        localPreviewUrl.value = ''
+      }
+      pendingFile.value = null
+      // 清除该商品的图片加载失败标记
+      if (editingProduct.id) {
+        delete brokenImages[editingProduct.id]
+      }
       loadData()
     } catch (e) {
 
@@ -305,7 +355,7 @@ const handleDelete = (row) => {
     } catch (e) {
 
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 // 重建 ES 索引
@@ -319,7 +369,7 @@ const handleRebuildIndex = () => {
     } catch (e) {
 
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 onMounted(() => {
@@ -343,12 +393,25 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.product-thumb {
+/* 缩略图：固定尺寸盒子，图片加载中/成功/失败占位均占同样空间 */
+.product-thumb-box {
   width: 60px;
   height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
   border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.product-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .price {
@@ -364,6 +427,7 @@ onMounted(() => {
 
 /* 图片上传 */
 .image-uploader :deep(.el-upload) {
+  display: flex;
   border: 1px dashed #d9d9d9;
   border-radius: 6px;
   cursor: pointer;

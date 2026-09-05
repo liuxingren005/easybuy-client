@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="admin-layout">
     <!-- 侧边栏 -->
     <div class="sidebar">
@@ -8,33 +8,47 @@
       </div>
       <el-menu :default-active="activeMenu" router class="sidebar-menu">
         <el-menu-item index="/admin/news">
-          <el-icon><Document /></el-icon>
+          <el-icon>
+            <Document />
+          </el-icon>
           <span>资讯管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/users">
-          <el-icon><User /></el-icon>
+          <el-icon>
+            <User />
+          </el-icon>
           <span>用户管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/categories">
-          <el-icon><Menu /></el-icon>
+          <el-icon>
+            <Menu />
+          </el-icon>
           <span>分类管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/products">
-          <el-icon><Goods /></el-icon>
+          <el-icon>
+            <Goods />
+          </el-icon>
           <span>商品管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/search">
-          <el-icon><Search /></el-icon>
+          <el-icon>
+            <Search />
+          </el-icon>
           <span>商品搜索</span>
         </el-menu-item>
         <el-menu-item index="/admin/orders">
-          <el-icon><List /></el-icon>
+          <el-icon>
+            <List />
+          </el-icon>
           <span>全部订单</span>
         </el-menu-item>
       </el-menu>
       <div class="sidebar-footer">
         <el-button text @click="goHome">
-          <el-icon><HomeFilled /></el-icon>
+          <el-icon>
+            <HomeFilled />
+          </el-icon>
           返回首页
         </el-button>
       </div>
@@ -46,7 +60,9 @@
       <div class="topbar">
         <span class="page-title">{{ currentTitle }}</span>
         <div class="user-info">
-          <el-icon><UserFilled /></el-icon>
+          <el-icon>
+            <UserFilled />
+          </el-icon>
           <span>{{ userStore.loginName }}</span>
           <span class="role-badge">{{ userStore.isAdmin ? '管理员' : '普通用户' }}</span>
           <el-button text type="danger" @click="handleLogout">退出登录</el-button>
@@ -66,14 +82,14 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Document, User, UserFilled, HomeFilled, Menu, Goods, List, Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { useImage } from '@/composables/useImage'
+import { useImageResolver } from '@/composables/useImage'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 // 图片资源
-const { img } = useImage()
+const { img } = useImageResolver()
 
 const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => route.meta.title || '管理后台')

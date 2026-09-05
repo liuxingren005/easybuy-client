@@ -4,28 +4,37 @@
     <div class="toolbar">
       <el-input v-model="filterText" placeholder="输入分类名称筛选" clearable style="width: 240px">
         <template #prefix>
-          <el-icon><Search /></el-icon>
+          <el-icon>
+            <Search />
+          </el-icon>
         </template>
       </el-input>
       <el-button @click="handleExpandAll">
-        <el-icon><ArrowDown /></el-icon>展开全部
+        <el-icon>
+          <ArrowDown />
+        </el-icon>展开全部
       </el-button>
       <el-button @click="handleCollapseAll">
-        <el-icon><ArrowUp /></el-icon>收起全部
+        <el-icon>
+          <ArrowUp />
+        </el-icon>收起全部
       </el-button>
       <el-button type="primary" @click="loadTree" :loading="loading">
-        <el-icon><Refresh /></el-icon>刷新
+        <el-icon>
+          <Refresh />
+        </el-icon>刷新
       </el-button>
       <el-button type="success" @click="openDialog(null)">
-        <el-icon><Plus /></el-icon>新增一级分类
+        <el-icon>
+          <Plus />
+        </el-icon>新增一级分类
       </el-button>
     </div>
 
     <!-- 分类树：树形结构 -->
     <div class="tree-card" v-loading="loading">
-      <el-tree ref="treeRef" :data="treeData" :props="treeProps" node-key="id"
-        :filter-node-method="filterNode" default-expand-all :expand-on-click-node="false"
-        :indent="28" class="category-tree">
+      <el-tree ref="treeRef" :data="treeData" :props="treeProps" node-key="id" :filter-node-method="filterNode"
+        default-expand-all :expand-on-click-node="false" :indent="28" class="category-tree">
         <template #default="{ node, data }">
           <div class="tree-node">
             <span class="node-label">
@@ -53,9 +62,8 @@
         <el-form-item label="上级分类">
           <!-- 编辑时可修改上级分类，不选则为一级分类（提交时 null 转 parent_id = 0） -->
           <el-tree-select v-model="editingCategory.parentId" :data="parentOptions"
-            :props="{ label: 'name', value: 'id', children: 'childCategory' }"
-            node-key="id" check-strictly clearable :render-after-expand="false"
-            placeholder="不选则为一级分类" style="width: 100%" />
+            :props="{ label: 'name', value: 'id', children: 'childCategory' }" node-key="id" check-strictly clearable
+            :render-after-expand="false" placeholder="不选则为一级分类" style="width: 100%" />
         </el-form-item>
         <el-form-item label="分类名称" prop="name">
           <el-input v-model="editingCategory.name" placeholder="请输入分类名称" maxlength="20" show-word-limit />
@@ -242,7 +250,7 @@ const handleDelete = (row) => {
     } catch (e) {
 
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 onMounted(() => {

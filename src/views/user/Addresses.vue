@@ -6,7 +6,9 @@
     <div class="limit-tip">
       <span>已添加 {{ addressList.length }} / 16 个地址</span>
       <el-button v-if="addressList.length < 16" type="primary" size="small" @click="openDialog()">
-        <el-icon><Plus /></el-icon>新增地址
+        <el-icon>
+          <Plus />
+        </el-icon>新增地址
       </el-button>
     </div>
 
@@ -17,8 +19,7 @@
 
     <!-- 地址列表 -->
     <div v-else class="address-grid">
-      <div v-for="addr in addressList" :key="addr.id" class="address-card"
-        :class="{ default: addr.isDefault === 1 }">
+      <div v-for="addr in addressList" :key="addr.id" class="address-card" :class="{ default: addr.isDefault === 1 }">
         <div class="card-header">
           <div class="address-text">
             <el-tag v-if="addr.isDefault === 1" size="small" type="warning" effect="plain" class="default-tag">
@@ -43,20 +44,18 @@
     </div>
 
     <!-- 新增/修改地址弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '修改地址' : '新增地址'" width="520px"
-      @close="resetForm">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '修改地址' : '新增地址'" width="520px" @close="resetForm">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
         <el-form-item label="所在地区" prop="region">
-          <el-cascader v-model="form.region" :options="cascaderOptions" :props="cascaderProps"
-            placeholder="请选择省/市/区" style="width: 100%" />
+          <el-cascader v-model="form.region" :options="cascaderOptions" :props="cascaderProps" placeholder="请选择省/市/区"
+            style="width: 100%" />
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="form.address" placeholder="请输入详细地址（街道、门牌号...）" type="textarea"
-            :rows="2" maxlength="200" show-word-limit />
+          <el-input v-model="form.address" placeholder="请输入详细地址（街道、门牌号...）" type="textarea" :rows="2" maxlength="200"
+            show-word-limit />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" placeholder="备注（可选，如公司、家...）" maxlength="50"
-            show-word-limit />
+          <el-input v-model="form.remark" placeholder="备注（可选，如公司、家...）" maxlength="50" show-word-limit />
         </el-form-item>
         <el-form-item label="默认地址">
           <el-switch v-model="form.isDefault" :active-value="1" :inactive-value="0" />
@@ -232,7 +231,7 @@ function handleDelete(row) {
       loadData()
     } catch (e) {
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 onMounted(() => {

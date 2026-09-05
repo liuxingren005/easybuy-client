@@ -73,10 +73,22 @@ const orderApi = {
     return request.put(`/order/${id}/pay/${payType}`, null, { params })
   },
   /**
-   * 退款（仅已付款状态退款，管理员操作）
+   * 退款（整单全额退款与按明细部分退款）
+   * @param {number} id - 订单ID
+   * @param {Object} [payload]
+   * @param {Array<{orderDetailId:number, quantity:number}>} [payload.items] - 退款明细，为空=全额退款
+   * @param {string} [payload.reason] - 退款原因
    */
-  refund(id) {
-    return request.put(`/order/${id}/refund`)
+  refund(id, payload) {
+    return request.put(`/order/${id}/refund`, payload || {})
+  },
+
+  /**
+   * 查询订单退款
+   * @param {number} id - 订单ID
+   */
+  getRefunds(id) {
+    return request.get(`/order/${id}/refunds`)
   },
 
   /**
