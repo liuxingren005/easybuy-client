@@ -1,0 +1,33 @@
+/* 阿里巴巴普惠体 Regular（本地字体） */
+@font-face {
+  font-family: "Alibaba PuHuiTi";
+  src: url("./assets/fonts/Alibaba-PuHuiTi-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  /* 字体加载期间用回退字体渲染，避免文字空白 */
+  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  font-family:
+    "Alibaba PuHuiTi", "KaiTi", serif, "Microsoft YaHei", "PingFang SC", "Helvetica Neue",
+    Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+a {
+  text-decoration: none;
+  color: #ff6600;
+}
+
+a:hover {
+  color: #ff8533;
+}
